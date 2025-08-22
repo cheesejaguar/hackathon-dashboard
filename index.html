@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="light">
 
 <head>
     <meta charset="UTF-8" />
@@ -9,6 +9,27 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
     <link href="/src/main.css" rel="stylesheet" />
+    <script>
+        // Initialize theme before React renders to prevent flash
+        (function() {
+            // Set default light theme first
+            document.documentElement.className = 'light';
+            
+            try {
+                // Get theme from localStorage (matching useKV key format)
+                const savedTheme = localStorage.getItem('theme');
+                if (savedTheme) {
+                    const theme = JSON.parse(savedTheme);
+                    if (theme === 'dark' || theme === 'vibes') {
+                        document.documentElement.className = theme;
+                    }
+                }
+            } catch (e) {
+                // If anything goes wrong, stick with light theme
+                console.warn('Failed to load saved theme, using light mode');
+            }
+        })();
+    </script>
 </head>
 
 <body>

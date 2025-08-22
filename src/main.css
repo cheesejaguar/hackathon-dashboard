@@ -107,6 +107,49 @@
 /*
   ---break---
 */
+.vibes {
+  /* Synthwave 80's retro theme with neon colors */
+  --background: oklch(0.08 0.05 270); /* Deep purple-black */
+  --foreground: oklch(0.95 0.08 320); /* Bright pink-white */
+  
+  --card: oklch(0.12 0.08 280); /* Dark purple card */
+  --card-foreground: oklch(0.90 0.08 320);
+  --popover: oklch(0.12 0.08 280);
+  --popover-foreground: oklch(0.90 0.08 320);
+  
+  --primary: oklch(0.70 0.25 320); /* Hot pink primary */
+  --primary-foreground: oklch(0.08 0.05 270);
+  --secondary: oklch(0.60 0.20 270); /* Purple secondary */
+  --secondary-foreground: oklch(0.95 0.08 320);
+  --muted: oklch(0.18 0.08 280); /* Muted purple */
+  --muted-foreground: oklch(0.65 0.08 320);
+  --accent: oklch(0.75 0.25 180); /* Cyan accent */
+  --accent-foreground: oklch(0.08 0.05 270);
+  --destructive: oklch(0.70 0.30 15); /* Neon red */
+  --border: oklch(0.25 0.15 280); /* Glowing purple border */
+  --input: oklch(0.20 0.12 280);
+  --ring: oklch(0.70 0.25 320); /* Pink focus ring */
+  
+  /* Synthwave chart colors - bright neons */
+  --chart-1: oklch(0.75 0.25 140); /* Neon green */
+  --chart-2: oklch(0.75 0.25 180); /* Neon cyan */
+  --chart-3: oklch(0.75 0.25 280); /* Neon purple */
+  --chart-4: oklch(0.80 0.30 320); /* Hot pink */
+  --chart-5: oklch(0.80 0.25 60); /* Neon yellow */
+  
+  --sidebar: oklch(0.12 0.08 280);
+  --sidebar-foreground: oklch(0.90 0.08 320);
+  --sidebar-primary: oklch(0.70 0.25 320);
+  --sidebar-primary-foreground: oklch(0.08 0.05 270);
+  --sidebar-accent: oklch(0.18 0.08 280);
+  --sidebar-accent-foreground: oklch(0.95 0.08 320);
+  --sidebar-border: oklch(0.25 0.15 280);
+  --sidebar-ring: oklch(0.70 0.25 320);
+}
+
+/*
+  ---break---
+*/
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);

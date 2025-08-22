@@ -6,15 +6,19 @@ export type Theme = 'light' | 'dark' | 'vibes';
 export function useTheme() {
   const [theme, setTheme] = useKV<Theme>('theme', 'light');
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const lastThemeRef = useRef<string | null>(null);
 
   useEffect(() => {
-    const root = document.documentElement;
+    const currentClass = document.documentElement.className;
     
-    // Remove existing theme classes
-    root.classList.remove('light', 'dark', 'vibes');
+    // Only update DOM if theme actually changed
+    if (lastThemeRef.current === theme && currentClass === theme) {
+      return;
+    }
     
-    // Add current theme class
-    root.classList.add(theme);
+    // Apply theme class immediately - replace entire className to be safe
+    document.documentElement.className = theme;
+    lastThemeRef.current = theme;
 
     // Handle vibes mode audio
     if (theme === 'vibes') {
