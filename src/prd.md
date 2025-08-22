@@ -2,14 +2,15 @@
 
 ## Core Purpose & Success
 
-**Mission Statement**: A beautiful, real-time dashboard that enables developers to monitor GitHub repository activity through authenticated access to their personal repositories.
+**Mission Statement**: A beautiful, real-time dashboard that enables developers to monitor any public GitHub repository activity, with optional authentication for enhanced access to private repositories and higher API rate limits.
 
 **Success Indicators**: 
-- Users can successfully authenticate with GitHub using personal access tokens
-- Users can browse and select from their own repositories 
+- Users can monitor any public repository without authentication
+- Users can optionally authenticate with GitHub using personal access tokens for private repository access
+- Users can browse and select from their personal repositories when authenticated
 - Live monitoring displays commit flow, branch status, pull requests, and workflow runs
-- Dashboard updates automatically every 30 seconds with fresh data
-- Seamless user experience from login to monitoring
+- Dashboard updates automatically every 30 seconds with fresh data (when authenticated)
+- Seamless user experience from repository input to monitoring
 
 **Experience Qualities**: Professional, Reliable, Intuitive
 
@@ -21,28 +22,33 @@
 
 ## Thought Process for Feature Selection
 
-**Core Problem Analysis**: Developers need a centralized, real-time view of repository activity without navigating through multiple GitHub pages. Personal repository access requires authentication to access private repositories and provide higher API rate limits.
+**Core Problem Analysis**: Developers need a centralized, real-time view of repository activity without navigating through multiple GitHub pages. While public repositories can be monitored without authentication, private repository access and higher API rate limits require optional GitHub authentication.
 
-**User Context**: Developers want to monitor repository activity during development cycles, track pull request status, monitor CI/CD pipelines, and stay informed about team contributions.
+**User Context**: Developers want to monitor repository activity during development cycles, track pull request status, monitor CI/CD pipelines, and stay informed about team contributions - both for public repositories they're interested in and their own private repositories.
 
-**Critical Path**: Login with GitHub → Select Repository → Monitor Live Data → Refresh/Switch as needed
+**Critical Path**: Enter Repository → Monitor Live Data → Optionally Login for Enhanced Access → Switch/Refresh as needed
 
 **Key Moments**: 
-1. Secure authentication with clear token setup guidance
-2. Intuitive repository selection with search and filtering
-3. Comprehensive dashboard view with auto-refresh capability
+1. Immediate access to public repository monitoring without barriers
+2. Clear, accessible authentication setup for enhanced features
+3. Comprehensive dashboard view with appropriate refresh capability based on authentication status
 
 ## Essential Features
 
-### GitHub OAuth Authentication
-- **Functionality**: Personal Access Token authentication with GitHub API
-- **Purpose**: Secure access to user's repositories including private ones, higher API rate limits
-- **Success Criteria**: User can login, see their profile, and access their repositories
+### Public Repository Access
+- **Functionality**: Direct access to any public GitHub repository without authentication
+- **Purpose**: Immediate monitoring capability without setup barriers
+- **Success Criteria**: Users can monitor any public repository instantly by entering owner/repo format
 
-### Repository Selection Interface
-- **Functionality**: Browse, search, and select from user's repositories with metadata preview
-- **Purpose**: Easy discovery and selection of repositories to monitor
-- **Success Criteria**: Users can quickly find and select repositories from their collection
+### Optional GitHub Authentication
+- **Functionality**: Personal Access Token authentication available through top-bar API setup dropdown
+- **Purpose**: Secure access to user's private repositories and higher API rate limits
+- **Success Criteria**: User can optionally authenticate to access private repositories and enhanced features
+
+### Repository Input & Selection Interface
+- **Functionality**: Direct repository input for public repos, plus browse/search personal repositories when authenticated
+- **Purpose**: Flexible access pattern supporting both casual browsing and personal repository management
+- **Success Criteria**: Users can quickly access public repositories or browse their personal collection when authenticated
 
 ### Live Repository Dashboard
 - **Functionality**: Real-time monitoring of commits, branches, pull requests, GitHub Actions, and repository insights
@@ -50,9 +56,9 @@
 - **Success Criteria**: Data updates automatically, shows current status accurately, provides analytical insights
 
 ### Auto-refresh & Manual Controls
-- **Functionality**: Automatic 30-second refresh with manual refresh and repository switching
-- **Purpose**: Keep data current while providing user control
-- **Success Criteria**: Users see live updates and can manually refresh or change repositories
+- **Functionality**: Automatic 30-second refresh for authenticated users, manual refresh for all users, and repository switching
+- **Purpose**: Keep data current while respecting API rate limits for unauthenticated users
+- **Success Criteria**: Authenticated users see live updates, all users can manually refresh and change repositories
 
 ### Repository Insights & Analytics
 - **Functionality**: Contributor activity analysis, language composition, and file change patterns

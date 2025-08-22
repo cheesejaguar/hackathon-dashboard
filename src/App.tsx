@@ -2,11 +2,13 @@ import { useState, useEffect } from 'react';
 import { useKV } from '@github/spark/hooks';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, RotateCcw } from '@phosphor-icons/react';
+import { ArrowLeft, RotateCcw, GitBranch } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 
 import { GitHubLogin } from '@/components/GitHubLogin';
 import { RepositorySelection } from '@/components/RepositorySelection';
+import { RepositoryInput } from '@/components/RepositoryInput';
+import { ApiSetup } from '@/components/ApiSetup';
 import { RepositoryHeader } from '@/components/RepositoryHeader';
 import { CommitFlow } from '@/components/CommitFlow';
 import { BranchMonitor } from '@/components/BranchMonitor';
@@ -48,6 +50,9 @@ function App() {
   useEffect(() => {
     if (auth.token) {
       githubAPI.setToken(auth.token);
+    } else {
+      // Clear token but still allow API usage (with rate limits)
+      githubAPI.setToken('');
     }
   }, [auth.token]);
 
@@ -209,7 +214,7 @@ function App() {
     toast.info('Logged out from GitHub');
   };
 
-  // Auto-refresh every 30 seconds when repository is loaded and user is authenticated
+  // Auto-refresh every 30 seconds when repository is loaded (only if authenticated for rate limiting)
   useEffect(() => {
     if (!currentRepo || !auth.isAuthenticated) return;
 
@@ -220,36 +225,53 @@ function App() {
     return () => clearInterval(interval);
   }, [currentRepo, auth.isAuthenticated]);
 
-  // Load repository on mount if currentRepo exists and user is authenticated
+  // Load repository on mount if currentRepo exists
   useEffect(() => {
-    if (currentRepo && !repository && auth.isAuthenticated) {
+    if (currentRepo && !repository) {
       handleRepositorySelect(currentRepo.owner, currentRepo.repo);
     }
-  }, [currentRepo, repository, auth.isAuthenticated]);
+  }, [currentRepo, repository]);
 
-  // Show login screen if not authenticated
-  if (!auth.isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-6">
-        <GitHubLogin 
-          onLogin={handleLogin}
-          isLoading={auth.isLoading}
-          error={auth.error}
-        />
-      </div>
-    );
-  }
-
-  // Show repository selection if no repository is selected
+  // Show repository selection/input if no repository is selected
   if (!currentRepo || !repository) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-6">
-        <RepositorySelection 
-          user={auth.user!}
-          token={auth.token!}
-          onRepositorySelect={handleRepositorySelect}
-          onLogout={handleLogout}
-        />
+      <div className="min-h-screen bg-background">
+        {/* Top bar with API setup */}
+        <div className="border-b bg-card/50 backdrop-blur">
+          <div className="container mx-auto px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <GitBranch className="w-6 h-6 text-primary" />
+                <h1 className="text-xl font-semibold">GitHub Repository Dashboard</h1>
+              </div>
+              <ApiSetup
+                isAuthenticated={auth.isAuthenticated}
+                userLogin={auth.user?.login}
+                onLogin={handleLogin}
+                onLogout={handleLogout}
+                isLoading={auth.isLoading}
+                error={auth.error}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-center p-6 min-h-[calc(100vh-80px)]">
+          {auth.isAuthenticated ? (
+            <RepositorySelection 
+              user={auth.user!}
+              token={auth.token!}
+              onRepositorySelect={handleRepositorySelect}
+              onLogout={handleLogout}
+            />
+          ) : (
+            <RepositoryInput
+              onRepositorySelect={handleRepositorySelect}
+              isLoading={loading.repository}
+              error={error}
+            />
+          )}
+        </div>
       </div>
     );
   }
@@ -283,13 +305,14 @@ function App() {
               <RotateCcw className={`w-4 h-4 ${Object.values(loading).some(Boolean) ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
-            <Button 
-              variant="outline" 
-              onClick={handleLogout}
-              className="flex items-center gap-2"
-            >
-              Logout
-            </Button>
+            <ApiSetup
+              isAuthenticated={auth.isAuthenticated}
+              userLogin={auth.user?.login}
+              onLogin={handleLogin}
+              onLogout={handleLogout}
+              isLoading={auth.isLoading}
+              error={auth.error}
+            />
           </div>
         </div>
 
