@@ -85,6 +85,44 @@
   --chart-gray: oklch(0.70 0.02 240);
 }
 
+.vibes {
+  /* Synthwave 80's retro theme with neon colors */
+  --background: oklch(0.08 0.05 270); /* Deep purple-black */
+  --foreground: oklch(0.95 0.08 320); /* Bright pink-white */
+
+  --card: oklch(0.12 0.08 280); /* Dark purple card */
+  --card-foreground: oklch(0.90 0.08 320);
+  --popover: oklch(0.12 0.08 280);
+  --popover-foreground: oklch(0.90 0.08 320);
+
+  --primary: oklch(0.70 0.25 320); /* Hot pink primary */
+  --primary-foreground: oklch(0.08 0.05 270);
+  --secondary: oklch(0.60 0.20 270); /* Purple secondary */
+  --secondary-foreground: oklch(0.95 0.08 320);
+  --accent: oklch(0.75 0.25 180); /* Cyan accent */
+  --accent-foreground: oklch(0.08 0.05 270);
+  --destructive: oklch(0.70 0.30 15); /* Neon red */
+  --destructive-foreground: oklch(0.95 0.08 320);
+
+  --muted: oklch(0.18 0.08 280); /* Muted purple */
+  --muted-foreground: oklch(0.65 0.08 320);
+  --border: oklch(0.25 0.15 280); /* Glowing purple border */
+  --input: oklch(0.20 0.12 280);
+  --ring: oklch(0.70 0.25 320); /* Pink focus ring */
+
+  /* Synthwave chart colors - bright neons */
+  --chart-success: oklch(0.75 0.25 140); /* Neon green */
+  --chart-warning: oklch(0.80 0.25 60); /* Neon yellow */
+  --chart-danger: oklch(0.75 0.30 15); /* Neon red */
+  --chart-info: oklch(0.75 0.25 180); /* Neon cyan */
+  --chart-purple: oklch(0.75 0.25 280); /* Neon purple */
+  --chart-pink: oklch(0.80 0.30 320); /* Hot pink */
+  --chart-teal: oklch(0.75 0.25 200); /* Bright teal */
+  --chart-orange: oklch(0.80 0.25 40); /* Neon orange */
+  --chart-cyan: oklch(0.80 0.25 190); /* Electric cyan */
+  --chart-gray: oklch(0.70 0.08 280); /* Purple-gray */
+}
+
 @theme {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -153,4 +191,53 @@ body {
 
 .pulse-live {
   animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Synthwave vibes mode effects */
+.vibes {
+  /* Add a subtle grid background */
+  background-image: 
+    linear-gradient(oklch(0.25 0.15 280 / 0.3) 1px, transparent 1px),
+    linear-gradient(90deg, oklch(0.25 0.15 280 / 0.3) 1px, transparent 1px);
+  background-size: 50px 50px;
+}
+
+.vibes .glow-effect {
+  box-shadow: 
+    0 0 20px oklch(0.70 0.25 320 / 0.5),
+    inset 0 0 20px oklch(0.70 0.25 320 / 0.1);
+}
+
+.vibes .border {
+  border-color: oklch(0.70 0.25 320 / 0.6);
+}
+
+.vibes .text-primary {
+  text-shadow: 0 0 10px oklch(0.70 0.25 320 / 0.8);
+}
+
+@keyframes neon-pulse {
+  0%, 100% {
+    text-shadow: 
+      0 0 5px currentColor,
+      0 0 10px currentColor,
+      0 0 15px currentColor;
+  }
+  50% {
+    text-shadow: 
+      0 0 2px currentColor,
+      0 0 5px currentColor,
+      0 0 8px currentColor;
+  }
+}
+
+.vibes .animate-neon {
+  animation: neon-pulse 2s ease-in-out infinite;
+}
+
+/* Synthwave button effects */
+.vibes button:hover {
+  box-shadow: 
+    0 0 15px oklch(0.70 0.25 320 / 0.6),
+    inset 0 0 15px oklch(0.70 0.25 320 / 0.1);
 }
