@@ -389,3 +389,29 @@ body {
 .vibes .animate-pulse.glow-effect {
   animation: activity-pulse 2s ease-out infinite;
 }
+
+/* Activity pulse animation for cards */
+@keyframes activity-pulse {
+  0% {
+    box-shadow: 
+      0 0 0 0 oklch(0.70 0.25 320 / 0.8),
+      0 0 20px oklch(0.70 0.25 320 / 0.5),
+      inset 0 0 20px oklch(0.70 0.25 320 / 0.1);
+  }
+  70% {
+    box-shadow: 
+      0 0 0 10px oklch(0.70 0.25 320 / 0),
+      0 0 40px oklch(0.70 0.25 320 / 0.8),
+      inset 0 0 30px oklch(0.70 0.25 320 / 0.2);
+  }
+  100% {
+    box-shadow: 
+      0 0 0 0 oklch(0.70 0.25 320 / 0),
+      0 0 20px oklch(0.70 0.25 320 / 0.5),
+      inset 0 0 20px oklch(0.70 0.25 320 / 0.1);
+  }
+}
+
+.vibes .animate-pulse.glow-effect {
+  animation: activity-pulse 2s ease-out infinite;
+}
