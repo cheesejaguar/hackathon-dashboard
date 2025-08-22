@@ -19,6 +19,7 @@ import { RepositoryInsights } from '@/components/RepositoryInsights';
 import { RepositoryComparison } from '@/components/RepositoryComparison';
 import { AddRepositoryDialog } from '@/components/AddRepositoryDialog';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { ThemeTransition } from '@/components/ThemeTransition';
 import { SynthwaveVisualizer } from '@/components/SynthwaveVisualizer';
 import { SynthwaveAudio } from '@/components/SynthwaveAudio';
 import { ParticleBurst } from '@/components/ParticleBurst';
@@ -252,6 +253,9 @@ function App() {
   if ((!currentRepo || !repository) && activeView !== 'compare') {
     return (
       <div className="min-h-screen bg-background">
+        {/* Theme Transition Effects */}
+        <ThemeTransition />
+        
         {/* Synthwave Visualizer - background only, not active without repository */}
         <SynthwaveVisualizer
           commits={[]}
@@ -333,6 +337,9 @@ function App() {
 
   return (
     <div className={`min-h-screen bg-background ${theme === 'vibes' ? burstMode.getBurstClassName() : ''}`}>
+      {/* Theme Transition Effects */}
+      <ThemeTransition />
+      
       {/* Synthwave Visualizer - only active in vibes mode */}
       <SynthwaveVisualizer
         commits={commits}

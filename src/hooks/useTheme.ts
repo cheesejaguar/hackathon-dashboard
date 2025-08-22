@@ -16,9 +16,19 @@ export function useTheme() {
       return;
     }
     
-    // Apply theme class immediately - replace entire className to be safe
-    document.documentElement.className = theme;
-    lastThemeRef.current = theme;
+    // Add transitioning class for smooth animations
+    document.documentElement.classList.add('theme-transitioning');
+    
+    // Apply theme class with smooth transition
+    requestAnimationFrame(() => {
+      document.documentElement.className = `${theme} theme-transitioning`;
+      lastThemeRef.current = theme;
+      
+      // Remove transitioning class after animation completes
+      setTimeout(() => {
+        document.documentElement.classList.remove('theme-transitioning');
+      }, 300);
+    });
 
     // Handle vibes mode audio
     if (theme === 'vibes') {

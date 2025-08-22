@@ -7,6 +7,25 @@
   }
 }
 
+/* Theme transition animations */
+.theme-transitioning {
+  transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.theme-transitioning *,
+.theme-transitioning *::before,
+.theme-transitioning *::after {
+  transition: 
+    background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    fill 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    stroke 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    text-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    backdrop-filter 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 :root {
   --radius: 0.5rem;
 }
@@ -526,4 +545,95 @@ body {
     0 0 10px currentColor,
     0 0 15px currentColor,
     0 0 20px currentColor;
+}
+
+/* Theme transition enhancements */
+.theme-transitioning .vibes {
+  animation: vibes-entrance 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes vibes-entrance {
+  0% {
+    filter: brightness(1) contrast(1) saturate(1);
+    transform: scale(1);
+  }
+  30% {
+    filter: brightness(1.2) contrast(1.1) saturate(1.3);
+    transform: scale(1.01);
+  }
+  60% {
+    filter: brightness(0.9) contrast(1.2) saturate(1.5);
+    transform: scale(0.99);
+  }
+  100% {
+    filter: brightness(1) contrast(1) saturate(1);
+    transform: scale(1);
+  }
+}
+
+/* Smooth card transitions during theme changes */
+.theme-transitioning .card,
+.theme-transitioning [data-card] {
+  transition: 
+    background 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+    backdrop-filter 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Smooth text transitions */
+.theme-transitioning h1,
+.theme-transitioning h2,
+.theme-transitioning h3,
+.theme-transitioning .text-primary,
+.theme-transitioning .text-secondary,
+.theme-transitioning .text-muted-foreground {
+  transition: 
+    color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    text-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Special transition effects for vibes mode elements */
+.theme-transitioning.vibes .border {
+  animation: border-glow-in 0.6s ease-out;
+}
+
+@keyframes border-glow-in {
+  0% {
+    border-color: oklch(0.25 0.02 240);
+    box-shadow: none;
+  }
+  50% {
+    border-color: oklch(0.70 0.25 320 / 0.8);
+    box-shadow: 0 0 20px oklch(0.70 0.25 320 / 0.5);
+  }
+  100% {
+    border-color: oklch(0.70 0.25 320 / 0.6);
+    box-shadow: 0 0 10px oklch(0.70 0.25 320 / 0.3);
+  }
+}
+
+/* Background gradient transitions */
+.theme-transitioning {
+  background-attachment: fixed;
+}
+
+/* Icon transitions */
+.theme-transitioning svg {
+  transition: 
+    fill 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    stroke 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    filter 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Chart and data visualization smooth transitions */
+.theme-transitioning [data-chart],
+.theme-transitioning .recharts-wrapper {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Loading state transitions */
+.theme-transitioning .animate-pulse,
+.theme-transitioning .animate-spin {
+  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
