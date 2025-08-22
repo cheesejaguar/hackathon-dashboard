@@ -15,10 +15,12 @@ import {
   Minus, 
   Edit,
   TrendingUp,
-  Calendar
+  Calendar,
+  Clock
 } from '@phosphor-icons/react';
 
 import { ContributorStats, LanguageStats, FileChange, Commit } from '@/lib/types';
+import { ContributionChart } from '@/components/ContributionChart';
 import { formatTimeAgo } from '@/lib/github';
 
 interface RepositoryInsightsProps {
@@ -28,6 +30,7 @@ interface RepositoryInsightsProps {
     commit: Commit;
     files: FileChange[];
   }>;
+  commits: Commit[];
   isLoading: {
     contributors: boolean;
     languages: boolean;
@@ -39,6 +42,7 @@ export function RepositoryInsights({
   contributors, 
   languages, 
   recentFileChanges,
+  commits,
   isLoading 
 }: RepositoryInsightsProps) {
   const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'all'>('month');
@@ -143,8 +147,12 @@ export function RepositoryInsights({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="contributors" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-3">
+        <Tabs defaultValue="activity" className="space-y-4">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="activity" className="flex items-center gap-2">
+              <Clock className="w-4 h-4" />
+              Activity
+            </TabsTrigger>
             <TabsTrigger value="contributors" className="flex items-center gap-2">
               <Users className="w-4 h-4" />
               Contributors
@@ -158,6 +166,14 @@ export function RepositoryInsights({
               File Changes
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="activity" className="space-y-4">
+            <ContributionChart
+              commits={commits}
+              contributors={contributors}
+              isLoading={isLoading.contributors}
+            />
+          </TabsContent>
 
           <TabsContent value="contributors" className="space-y-4">
             <div className="flex items-center gap-2 mb-4">

@@ -336,6 +336,7 @@ function App() {
               contributors={contributors}
               languages={languages}
               recentFileChanges={recentFileChanges}
+              commits={commits}
               isLoading={{
                 contributors: loading.contributors,
                 languages: loading.languages,
