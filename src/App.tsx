@@ -5,17 +5,20 @@ import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, RotateCcw } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 
-import { RepositoryInput } from '@/components/RepositoryInput';
+import { GitHubLogin } from '@/components/GitHubLogin';
+import { RepositorySelection } from '@/components/RepositorySelection';
 import { RepositoryHeader } from '@/components/RepositoryHeader';
 import { CommitFlow } from '@/components/CommitFlow';
 import { BranchMonitor } from '@/components/BranchMonitor';
 import { PullRequestDashboard } from '@/components/PullRequestDashboard';
 import { ActionStatus } from '@/components/ActionStatus';
 
+import { useGitHubAuth } from '@/hooks/useGitHubAuth';
 import { githubAPI } from '@/lib/github';
 import { Repository, Commit, Branch, PullRequest, WorkflowRun } from '@/lib/types';
 
 function App() {
+  const auth = useGitHubAuth();
   const [currentRepo, setCurrentRepo] = useKV<{owner: string, repo: string} | null>('current-repo', null);
   const [repository, setRepository] = useState<Repository | null>(null);
   const [commits, setCommits] = useState<Commit[]>([]);
@@ -33,6 +36,13 @@ function App() {
   
   const [error, setError] = useState<string | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
+
+  // Set GitHub API token when authenticated
+  useEffect(() => {
+    if (auth.token) {
+      githubAPI.setToken(auth.token);
+    }
+  }, [auth.token]);
 
   const handleRepositorySelect = async (owner: string, repo: string) => {
     setError(null);
@@ -134,31 +144,62 @@ function App() {
     setLastRefresh(null);
   };
 
-  // Auto-refresh every 30 seconds when repository is loaded
+  const handleLogin = async (token: string) => {
+    try {
+      await auth.loginWithToken(token);
+      toast.success('Successfully connected to GitHub!');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Login failed';
+      toast.error(message);
+    }
+  };
+
+  const handleLogout = () => {
+    auth.logout();
+    handleBackToSelection();
+    toast.info('Logged out from GitHub');
+  };
+
+  // Auto-refresh every 30 seconds when repository is loaded and user is authenticated
   useEffect(() => {
-    if (!currentRepo) return;
+    if (!currentRepo || !auth.isAuthenticated) return;
 
     const interval = setInterval(() => {
       loadRepositoryData(currentRepo.owner, currentRepo.repo);
     }, 30000);
 
     return () => clearInterval(interval);
-  }, [currentRepo]);
+  }, [currentRepo, auth.isAuthenticated]);
 
-  // Load repository on mount if currentRepo exists
+  // Load repository on mount if currentRepo exists and user is authenticated
   useEffect(() => {
-    if (currentRepo && !repository) {
+    if (currentRepo && !repository && auth.isAuthenticated) {
       handleRepositorySelect(currentRepo.owner, currentRepo.repo);
     }
-  }, [currentRepo, repository]);
+  }, [currentRepo, repository, auth.isAuthenticated]);
 
+  // Show login screen if not authenticated
+  if (!auth.isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+        <GitHubLogin 
+          onLogin={handleLogin}
+          isLoading={auth.isLoading}
+          error={auth.error}
+        />
+      </div>
+    );
+  }
+
+  // Show repository selection if no repository is selected
   if (!currentRepo || !repository) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-6">
-        <RepositoryInput 
+        <RepositorySelection 
+          user={auth.user!}
+          token={auth.token!}
           onRepositorySelect={handleRepositorySelect}
-          isLoading={loading.repository}
-          error={error}
+          onLogout={handleLogout}
         />
       </div>
     );
@@ -192,6 +233,13 @@ function App() {
             >
               <RotateCcw className={`w-4 h-4 ${Object.values(loading).some(Boolean) ? 'animate-spin' : ''}`} />
               Refresh
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={handleLogout}
+              className="flex items-center gap-2"
+            >
+              Logout
             </Button>
           </div>
         </div>

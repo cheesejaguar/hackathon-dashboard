@@ -3,13 +3,23 @@ import { Repository, Commit, Branch, PullRequest, WorkflowRun } from './types';
 const GITHUB_API_BASE = 'https://api.github.com';
 
 class GitHubAPI {
+  private token: string | null = null;
+
+  setToken(token: string | null) {
+    this.token = token;
+  }
+
   private async fetchWithAuth(url: string): Promise<Response> {
-    const response = await fetch(url, {
-      headers: {
-        'Accept': 'application/vnd.github.v3+json',
-        'User-Agent': 'GitHub-Dashboard-App',
-      },
-    });
+    const headers: Record<string, string> = {
+      'Accept': 'application/vnd.github.v3+json',
+      'User-Agent': 'GitHub-Dashboard-App',
+    };
+
+    if (this.token) {
+      headers['Authorization'] = `token ${this.token}`;
+    }
+
+    const response = await fetch(url, { headers });
 
     if (!response.ok) {
       throw new Error(`GitHub API error: ${response.status} ${response.statusText}`);
