@@ -4,6 +4,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Play, ExternalLink, Clock, GitBranch } from '@phosphor-icons/react';
 import { WorkflowRun } from '@/lib/types';
 import { formatTimeAgo, getStatusColor, getStatusIcon } from '@/lib/github';
+import { useTheme } from '@/hooks/useTheme';
+import { useEffect, useState } from 'react';
 
 interface ActionStatusProps {
   workflowRuns: WorkflowRun[];
@@ -11,6 +13,21 @@ interface ActionStatusProps {
 }
 
 export function ActionStatus({ workflowRuns, isLoading }: ActionStatusProps) {
+  const { theme } = useTheme();
+  const [recentActivity, setRecentActivity] = useState(false);
+
+  // Detect recent workflow activity for visual effects
+  useEffect(() => {
+    const hasRecentActivity = workflowRuns.some(run => 
+      new Date(run.updated_at) > new Date(Date.now() - 5 * 60 * 1000)
+    );
+    
+    if (hasRecentActivity) {
+      setRecentActivity(true);
+      const timer = setTimeout(() => setRecentActivity(false), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [workflowRuns]);
   if (isLoading) {
     return (
       <Card>
@@ -67,9 +84,9 @@ export function ActionStatus({ workflowRuns, isLoading }: ActionStatusProps) {
   };
 
   return (
-    <Card>
+    <Card className={`${theme === 'vibes' && recentActivity ? 'animate-pulse glow-effect' : ''}`}>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className={`flex items-center gap-2 ${theme === 'vibes' ? 'animate-neon' : ''}`}>
           <Play className="w-5 h-5" />
           CI/CD Status
           <Badge variant="secondary" className="ml-auto">

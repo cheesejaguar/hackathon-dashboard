@@ -4,14 +4,17 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Star, GitFork, AlertCircle, ExternalLink } from '@phosphor-icons/react';
 import { Repository } from '@/lib/types';
 import { formatTimeAgo } from '@/lib/github';
+import { useTheme } from '@/hooks/useTheme';
 
 interface RepositoryHeaderProps {
   repository: Repository;
 }
 
 export function RepositoryHeader({ repository }: RepositoryHeaderProps) {
+  const { theme } = useTheme();
+  
   return (
-    <Card>
+    <Card className={`${theme === 'vibes' ? 'glow-effect' : ''} relative overflow-hidden`}>
       <CardHeader>
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
@@ -20,7 +23,7 @@ export function RepositoryHeader({ repository }: RepositoryHeaderProps) {
               <AvatarFallback>{repository.owner.login[0].toUpperCase()}</AvatarFallback>
             </Avatar>
             <div>
-              <CardTitle className="text-xl">
+              <CardTitle className={`text-xl ${theme === 'vibes' ? 'animate-neon' : ''}`}>
                 <a 
                   href={repository.html_url} 
                   target="_blank" 

@@ -6,6 +6,8 @@ import { GitPullRequest, ExternalLink, Clock, GitBranch } from '@phosphor-icons/
 import { PullRequest } from '@/lib/types';
 import { formatTimeAgo } from '@/lib/github';
 import { useChartColors } from '@/hooks/useChartColors';
+import { useTheme } from '@/hooks/useTheme';
+import { useEffect, useState } from 'react';
 
 interface PullRequestDashboardProps {
   pullRequests: PullRequest[];
@@ -14,6 +16,21 @@ interface PullRequestDashboardProps {
 
 export function PullRequestDashboard({ pullRequests, isLoading }: PullRequestDashboardProps) {
   const { statusColors } = useChartColors();
+  const { theme } = useTheme();
+  const [recentActivity, setRecentActivity] = useState(false);
+
+  // Detect recent PR activity for visual effects
+  useEffect(() => {
+    const hasRecentActivity = pullRequests.some(pr => 
+      new Date(pr.updated_at) > new Date(Date.now() - 5 * 60 * 1000)
+    );
+    
+    if (hasRecentActivity) {
+      setRecentActivity(true);
+      const timer = setTimeout(() => setRecentActivity(false), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [pullRequests]);
   
   if (isLoading) {
     return (
@@ -65,9 +82,9 @@ export function PullRequestDashboard({ pullRequests, isLoading }: PullRequestDas
   };
 
   return (
-    <Card>
+    <Card className={`${theme === 'vibes' && recentActivity ? 'animate-pulse glow-effect' : ''}`}>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className={`flex items-center gap-2 ${theme === 'vibes' ? 'animate-neon' : ''}`}>
           <GitPullRequest className="w-5 h-5" />
           Pull Requests
           <Badge variant="secondary" className="ml-auto">

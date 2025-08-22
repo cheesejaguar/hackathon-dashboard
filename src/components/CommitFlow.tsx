@@ -5,6 +5,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { GitCommit, ExternalLink } from '@phosphor-icons/react';
 import { Commit } from '@/lib/types';
 import { formatTimeAgo } from '@/lib/github';
+import { useTheme } from '@/hooks/useTheme';
+import { useEffect, useState } from 'react';
 
 interface CommitFlowProps {
   commits: Commit[];
@@ -12,6 +14,21 @@ interface CommitFlowProps {
 }
 
 export function CommitFlow({ commits, isLoading }: CommitFlowProps) {
+  const { theme } = useTheme();
+  const [recentActivity, setRecentActivity] = useState(false);
+
+  // Detect recent commits (within last 5 minutes) for visual effects
+  useEffect(() => {
+    const hasRecentCommits = commits.some(commit => 
+      new Date(commit.commit.author.date) > new Date(Date.now() - 5 * 60 * 1000)
+    );
+    
+    if (hasRecentCommits) {
+      setRecentActivity(true);
+      const timer = setTimeout(() => setRecentActivity(false), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [commits]);
   if (isLoading) {
     return (
       <Card>
@@ -39,9 +56,9 @@ export function CommitFlow({ commits, isLoading }: CommitFlowProps) {
   }
 
   return (
-    <Card>
+    <Card className={`${theme === 'vibes' && recentActivity ? 'animate-pulse glow-effect' : ''}`}>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className={`flex items-center gap-2 ${theme === 'vibes' ? 'animate-neon' : ''}`}>
           <GitCommit className="w-5 h-5" />
           Recent Commits
           <Badge variant="secondary" className="ml-auto">

@@ -19,6 +19,8 @@ import { RepositoryInsights } from '@/components/RepositoryInsights';
 import { RepositoryComparison } from '@/components/RepositoryComparison';
 import { AddRepositoryDialog } from '@/components/AddRepositoryDialog';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { SynthwaveVisualizer } from '@/components/SynthwaveVisualizer';
+import { SynthwaveAudio } from '@/components/SynthwaveAudio';
 
 import { useGitHubAuth } from '@/hooks/useGitHubAuth';
 import { useRepositoryComparison } from '@/hooks/useRepositoryComparison';
@@ -29,7 +31,7 @@ import { Repository, Commit, Branch, PullRequest, WorkflowRun, ContributorStats,
 function App() {
   const auth = useGitHubAuth();
   const comparison = useRepositoryComparison();
-  useTheme(); // Initialize theme on app load
+  const { theme } = useTheme(); // Get theme from hook
   const [currentRepo, setCurrentRepo] = useKV<{owner: string, repo: string} | null>('current-repo', null);
   const [activeView, setActiveView] = useKV<'monitor' | 'compare'>('active-view', 'monitor');
   const [repository, setRepository] = useState<Repository | null>(null);
@@ -245,6 +247,14 @@ function App() {
   if ((!currentRepo || !repository) && activeView !== 'compare') {
     return (
       <div className="min-h-screen bg-background">
+        {/* Synthwave Visualizer - background only, not active without repository */}
+        <SynthwaveVisualizer
+          commits={[]}
+          pullRequests={[]}
+          workflowRuns={[]}
+          isActive={false}
+        />
+        
         {/* Top bar with API setup */}
         <div className="border-b bg-card/50 backdrop-blur">
           <div className="container mx-auto px-6 py-4">
@@ -280,7 +290,7 @@ function App() {
           </div>
         </div>
 
-        <div className="flex items-center justify-center p-6 min-h-[calc(100vh-80px)]">
+        <div className="flex items-center justify-center p-6 min-h-[calc(100vh-80px)] relative z-10">{/* Ensure content is above visualizer */}
           {activeView === 'compare' ? (
             <div className="w-full max-w-6xl">
               <RepositoryComparison
@@ -310,7 +320,18 @@ function App() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto p-6 space-y-6">
+      {/* Synthwave Visualizer - only active in vibes mode */}
+      <SynthwaveVisualizer
+        commits={commits}
+        pullRequests={pullRequests}
+        workflowRuns={workflowRuns}
+        isActive={theme === 'vibes' && !!repository}
+      />
+      
+      {/* Synthwave Audio - only plays in vibes mode when repository is active */}
+      <SynthwaveAudio isPlaying={theme === 'vibes' && !!repository} />
+
+      <div className="container mx-auto p-6 space-y-6 relative z-10">{/* Ensure content is above visualizer */}
         <Tabs value={activeView} onValueChange={(value) => setActiveView(value as 'monitor' | 'compare')}>
           {/* Header with navigation and controls */}
           <div className="flex items-center justify-between">

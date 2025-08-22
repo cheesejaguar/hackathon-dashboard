@@ -198,8 +198,11 @@ body {
   /* Add a subtle grid background */
   background-image: 
     linear-gradient(oklch(0.25 0.15 280 / 0.3) 1px, transparent 1px),
-    linear-gradient(90deg, oklch(0.25 0.15 280 / 0.3) 1px, transparent 1px);
-  background-size: 50px 50px;
+    linear-gradient(90deg, oklch(0.25 0.15 280 / 0.3) 1px, transparent 1px),
+    radial-gradient(circle at 20% 20%, oklch(0.70 0.25 320 / 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, oklch(0.75 0.25 180 / 0.1) 0%, transparent 50%);
+  background-size: 50px 50px, 50px 50px, 100% 100%, 100% 100%;
+  background-attachment: fixed;
 }
 
 .vibes .glow-effect {
@@ -210,10 +213,23 @@ body {
 
 .vibes .border {
   border-color: oklch(0.70 0.25 320 / 0.6);
+  box-shadow: 0 0 10px oklch(0.70 0.25 320 / 0.3);
 }
 
 .vibes .text-primary {
   text-shadow: 0 0 10px oklch(0.70 0.25 320 / 0.8);
+}
+
+.vibes .card {
+  background: linear-gradient(135deg, 
+    oklch(0.12 0.08 280 / 0.8), 
+    oklch(0.08 0.05 270 / 0.9)
+  );
+  border: 1px solid oklch(0.70 0.25 320 / 0.3);
+  box-shadow: 
+    0 8px 32px oklch(0.70 0.25 320 / 0.1),
+    inset 0 1px 0 oklch(0.70 0.25 320 / 0.2);
+  backdrop-filter: blur(10px);
 }
 
 @keyframes neon-pulse {
@@ -235,9 +251,141 @@ body {
   animation: neon-pulse 2s ease-in-out infinite;
 }
 
+@keyframes glow-rotate {
+  0% {
+    box-shadow: 
+      0 0 20px oklch(0.70 0.25 320 / 0.6),
+      0 0 40px oklch(0.75 0.25 180 / 0.4),
+      inset 0 0 20px oklch(0.70 0.25 320 / 0.1);
+  }
+  25% {
+    box-shadow: 
+      0 0 20px oklch(0.75 0.25 180 / 0.6),
+      0 0 40px oklch(0.80 0.25 60 / 0.4),
+      inset 0 0 20px oklch(0.75 0.25 180 / 0.1);
+  }
+  50% {
+    box-shadow: 
+      0 0 20px oklch(0.80 0.25 60 / 0.6),
+      0 0 40px oklch(0.75 0.30 15 / 0.4),
+      inset 0 0 20px oklch(0.80 0.25 60 / 0.1);
+  }
+  75% {
+    box-shadow: 
+      0 0 20px oklch(0.75 0.30 15 / 0.6),
+      0 0 40px oklch(0.70 0.25 320 / 0.4),
+      inset 0 0 20px oklch(0.75 0.30 15 / 0.1);
+  }
+  100% {
+    box-shadow: 
+      0 0 20px oklch(0.70 0.25 320 / 0.6),
+      0 0 40px oklch(0.75 0.25 180 / 0.4),
+      inset 0 0 20px oklch(0.70 0.25 320 / 0.1);
+  }
+}
+
 /* Synthwave button effects */
 .vibes button:hover {
-  box-shadow: 
-    0 0 15px oklch(0.70 0.25 320 / 0.6),
-    inset 0 0 15px oklch(0.70 0.25 320 / 0.1);
+  animation: glow-rotate 2s ease-in-out infinite;
+  transform: translateY(-1px);
+  transition: transform 0.2s ease;
+}
+
+.vibes button:active {
+  transform: translateY(0);
+}
+
+/* Enhanced visualizer effects */
+.vibes .visualizer-container {
+  position: relative;
+  overflow: hidden;
+}
+
+.vibes .visualizer-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(
+    ellipse at center,
+    oklch(0.70 0.25 320 / 0.1) 0%,
+    transparent 70%
+  );
+  pointer-events: none;
+  animation: pulse-glow 4s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.05);
+  }
+}
+
+/* Scanning line effect */
+.vibes::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, 
+    transparent, 
+    oklch(0.75 0.25 180 / 0.8), 
+    transparent
+  );
+  box-shadow: 0 0 20px oklch(0.75 0.25 180 / 0.6);
+  animation: scan-line 3s linear infinite;
+  pointer-events: none;
+  z-index: 1000;
+}
+
+@keyframes scan-line {
+  0% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh);
+    opacity: 0;
+  }
+}
+
+/* Activity pulse animation for cards */
+@keyframes activity-pulse {
+  0% {
+    box-shadow: 
+      0 0 0 0 oklch(0.70 0.25 320 / 0.8),
+      0 0 20px oklch(0.70 0.25 320 / 0.5),
+      inset 0 0 20px oklch(0.70 0.25 320 / 0.1);
+  }
+  70% {
+    box-shadow: 
+      0 0 0 10px oklch(0.70 0.25 320 / 0),
+      0 0 40px oklch(0.70 0.25 320 / 0.8),
+      inset 0 0 30px oklch(0.70 0.25 320 / 0.2);
+  }
+  100% {
+    box-shadow: 
+      0 0 0 0 oklch(0.70 0.25 320 / 0),
+      0 0 20px oklch(0.70 0.25 320 / 0.5),
+      inset 0 0 20px oklch(0.70 0.25 320 / 0.1);
+  }
+}
+
+.vibes .animate-pulse.glow-effect {
+  animation: activity-pulse 2s ease-out infinite;
 }
