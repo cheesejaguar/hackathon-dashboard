@@ -18,15 +18,18 @@ import { ActionStatus } from '@/components/ActionStatus';
 import { RepositoryInsights } from '@/components/RepositoryInsights';
 import { RepositoryComparison } from '@/components/RepositoryComparison';
 import { AddRepositoryDialog } from '@/components/AddRepositoryDialog';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 import { useGitHubAuth } from '@/hooks/useGitHubAuth';
 import { useRepositoryComparison } from '@/hooks/useRepositoryComparison';
+import { useTheme } from '@/hooks/useTheme';
 import { githubAPI } from '@/lib/github';
 import { Repository, Commit, Branch, PullRequest, WorkflowRun, ContributorStats, LanguageStats, FileChange } from '@/lib/types';
 
 function App() {
   const auth = useGitHubAuth();
   const comparison = useRepositoryComparison();
+  useTheme(); // Initialize theme on app load
   const [currentRepo, setCurrentRepo] = useKV<{owner: string, repo: string} | null>('current-repo', null);
   const [activeView, setActiveView] = useKV<'monitor' | 'compare'>('active-view', 'monitor');
   const [repository, setRepository] = useState<Repository | null>(null);
@@ -251,6 +254,7 @@ function App() {
                 <h1 className="text-xl font-semibold">GitHub Repository Dashboard</h1>
               </div>
               <div className="flex items-center gap-4">
+                <ThemeToggle />
                 <Tabs value={activeView} onValueChange={(value) => setActiveView(value as 'monitor' | 'compare')}>
                   <TabsList>
                     <TabsTrigger value="monitor" className="flex items-center gap-2">
@@ -351,6 +355,7 @@ function App() {
                   Refresh
                 </Button>
               )}
+              <ThemeToggle />
               <ApiSetup
                 isAuthenticated={auth.isAuthenticated}
                 userLogin={auth.user?.login}
