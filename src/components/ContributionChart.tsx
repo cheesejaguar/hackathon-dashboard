@@ -3,6 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Commit, ContributorStats } from '@/lib/types';
+import { useChartColors } from '@/hooks/useChartColors';
 
 interface ContributionChartProps {
   commits: Commit[];
@@ -22,6 +23,8 @@ interface UserContribution {
 }
 
 export function ContributionChart({ commits, contributors, isLoading }: ContributionChartProps) {
+  const { colors, theme } = useChartColors();
+  
   const contributionData = useMemo(() => {
     if (!commits.length || !contributors.length) return [];
 
@@ -93,11 +96,20 @@ export function ContributionChart({ commits, contributors, isLoading }: Contribu
     if (commitCount === 0) return 'bg-muted';
     
     const intensity = commitCount / maxCommitsInHour;
-    if (intensity >= 0.8) return 'bg-green-700';
-    if (intensity >= 0.6) return 'bg-green-600';
-    if (intensity >= 0.4) return 'bg-green-500';
-    if (intensity >= 0.2) return 'bg-green-400';
-    return 'bg-green-300';
+    // Use CSS custom properties for theme-aware colors
+    if (intensity >= 0.8) return 'opacity-100';
+    if (intensity >= 0.6) return 'opacity-80';
+    if (intensity >= 0.4) return 'opacity-60';
+    if (intensity >= 0.2) return 'opacity-40';
+    return 'opacity-20';
+  };
+
+  const getIntensityStyle = (commitCount: number) => {
+    if (commitCount === 0) return {};
+    
+    return {
+      backgroundColor: colors.success,
+    };
   };
 
   const formatHour = (hour: number) => {
@@ -160,10 +172,11 @@ export function ContributionChart({ commits, contributors, isLoading }: Contribu
             <span className="text-muted-foreground">Less</span>
             <div className="flex gap-1">
               <div className="w-3 h-3 bg-muted rounded-sm" />
-              <div className="w-3 h-3 bg-green-300 rounded-sm" />
-              <div className="w-3 h-3 bg-green-500 rounded-sm" />
-              <div className="w-3 h-3 bg-green-600 rounded-sm" />
-              <div className="w-3 h-3 bg-green-700 rounded-sm" />
+              <div className="w-3 h-3 rounded-sm opacity-20" style={{ backgroundColor: colors.success }} />
+              <div className="w-3 h-3 rounded-sm opacity-40" style={{ backgroundColor: colors.success }} />
+              <div className="w-3 h-3 rounded-sm opacity-60" style={{ backgroundColor: colors.success }} />
+              <div className="w-3 h-3 rounded-sm opacity-80" style={{ backgroundColor: colors.success }} />
+              <div className="w-3 h-3 rounded-sm opacity-100" style={{ backgroundColor: colors.success }} />
             </div>
             <span className="text-muted-foreground">More</span>
           </div>
@@ -200,7 +213,8 @@ export function ContributionChart({ commits, contributors, isLoading }: Contribu
                 {userContribution.hourlyData.map((hourData, index) => (
                   <div
                     key={index}
-                    className={`w-3 h-3 rounded-sm ${getIntensityClass(hourData.commitCount)}`}
+                    className={`w-3 h-3 rounded-sm ${hourData.commitCount === 0 ? 'bg-muted' : getIntensityClass(hourData.commitCount)}`}
+                    style={getIntensityStyle(hourData.commitCount)}
                     title={`${formatHour(hourData.hour)}: ${hourData.commitCount} commits`}
                   />
                 ))}

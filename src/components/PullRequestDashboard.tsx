@@ -5,6 +5,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { GitPullRequest, ExternalLink, Clock, GitBranch } from '@phosphor-icons/react';
 import { PullRequest } from '@/lib/types';
 import { formatTimeAgo } from '@/lib/github';
+import { useChartColors } from '@/hooks/useChartColors';
 
 interface PullRequestDashboardProps {
   pullRequests: PullRequest[];
@@ -12,6 +13,8 @@ interface PullRequestDashboardProps {
 }
 
 export function PullRequestDashboard({ pullRequests, isLoading }: PullRequestDashboardProps) {
+  const { statusColors } = useChartColors();
+  
   if (isLoading) {
     return (
       <Card>
@@ -41,13 +44,13 @@ export function PullRequestDashboard({ pullRequests, isLoading }: PullRequestDas
   }
 
   const getStateColor = (state: string, draft: boolean, mergeableState: string) => {
-    if (draft) return 'text-gray-500';
+    if (draft) return { color: statusColors.cancelled };
     if (state === 'open') {
-      if (mergeableState === 'blocked') return 'text-red-500';
-      if (mergeableState === 'clean') return 'text-green-500';
-      return 'text-blue-500';
+      if (mergeableState === 'blocked') return { color: statusColors.failure };
+      if (mergeableState === 'clean') return { color: statusColors.success };
+      return { color: statusColors.pending };
     }
-    return 'text-gray-500';
+    return { color: statusColors.cancelled };
   };
 
   const getStateLabel = (state: string, draft: boolean, mergeableState: string) => {
@@ -121,7 +124,7 @@ export function PullRequestDashboard({ pullRequests, isLoading }: PullRequestDas
                         <div className="flex items-center gap-2">
                           <Badge 
                             variant="outline" 
-                            className={getStateColor(pr.state, pr.draft, pr.mergeable_state)}
+                            style={getStateColor(pr.state, pr.draft, pr.mergeable_state)}
                           >
                             {getStateLabel(pr.state, pr.draft, pr.mergeable_state)}
                           </Badge>

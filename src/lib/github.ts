@@ -142,16 +142,16 @@ export function formatTimeAgo(dateString: string): string {
 export function getStatusColor(status: string, conclusion?: string | null): string {
   if (status === 'completed') {
     switch (conclusion) {
-      case 'success': return 'text-green-600';
-      case 'failure': return 'text-red-600';
-      case 'cancelled': return 'text-gray-500';
-      case 'skipped': return 'text-gray-400';
-      default: return 'text-yellow-600';
+      case 'success': return 'text-chart-success';
+      case 'failure': return 'text-chart-danger';
+      case 'cancelled': return 'text-chart-gray';
+      case 'skipped': return 'text-chart-gray';
+      default: return 'text-chart-warning';
     }
   }
-  if (status === 'in_progress') return 'text-blue-600';
-  if (status === 'queued') return 'text-yellow-500';
-  return 'text-gray-500';
+  if (status === 'in_progress') return 'text-chart-info';
+  if (status === 'queued') return 'text-chart-warning';
+  return 'text-chart-gray';
 }
 
 export function getStatusIcon(status: string, conclusion?: string | null): string {

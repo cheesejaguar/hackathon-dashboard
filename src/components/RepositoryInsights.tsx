@@ -22,6 +22,7 @@ import {
 import { ContributorStats, LanguageStats, FileChange, Commit } from '@/lib/types';
 import { ContributionChart } from '@/components/ContributionChart';
 import { formatTimeAgo } from '@/lib/github';
+import { useChartColors } from '@/hooks/useChartColors';
 
 interface RepositoryInsightsProps {
   contributors: ContributorStats[];
@@ -46,6 +47,7 @@ export function RepositoryInsights({
   isLoading 
 }: RepositoryInsightsProps) {
   const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'all'>('month');
+  const { languageColors, seriesColors } = useChartColors();
 
   // Calculate language percentages
   const totalLanguageBytes = Object.values(languages).reduce((sum, bytes) => sum + bytes, 0);
@@ -109,30 +111,15 @@ export function RepositoryInsights({
     .sort((a, b) => b.count - a.count)
     .slice(0, 8);
 
-  const getLanguageColor = (language: string): string => {
-    const colors: Record<string, string> = {
-      javascript: '#f7df1e',
-      typescript: '#3178c6',
-      python: '#3776ab',
-      java: '#ed8b00',
-      csharp: '#239120',
-      cpp: '#00599c',
-      c: '#555555',
-      go: '#00add8',
-      rust: '#dea584',
-      php: '#777bb4',
-      ruby: '#cc342d',
-      swift: '#fa7343',
-      kotlin: '#7f52ff',
-      dart: '#0175c2',
-      scala: '#dc322f',
-      html: '#e34f26',
-      css: '#1572b6',
-      vue: '#4fc08d',
-      react: '#61dafb',
-      angular: '#dd0031'
-    };
-    return colors[language.toLowerCase()] || '#6b7280';
+  const getLanguageColor = (language: string, index: number = 0): string => {
+    // First try to get a predefined language color
+    const predefinedColor = languageColors[language];
+    if (predefinedColor) {
+      return predefinedColor;
+    }
+    
+    // Fall back to series colors for unknown languages
+    return seriesColors[index % seriesColors.length];
   };
 
   return (
@@ -238,12 +225,12 @@ export function RepositoryInsights({
                         </div>
                         
                         <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <Plus className="w-3 h-3 text-green-600" />
+                          <span className="flex items-center gap-1" style={{ color: seriesColors[1] }}>
+                            <Plus className="w-3 h-3" />
                             {contributor.activity.additions}
                           </span>
-                          <span className="flex items-center gap-1">
-                            <Minus className="w-3 h-3 text-red-600" />
+                          <span className="flex items-center gap-1" style={{ color: seriesColors[8] }}>
+                            <Minus className="w-3 h-3" />
                             {contributor.activity.deletions}
                           </span>
                           <span className="text-xs">
@@ -278,13 +265,13 @@ export function RepositoryInsights({
               </div>
             ) : (
               <div className="space-y-4">
-                {languagePercentages.map(({ language, percentage, bytes }) => (
+                {languagePercentages.map(({ language, percentage, bytes }, index) => (
                   <div key={language} className="space-y-2">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <div 
                           className="w-3 h-3 rounded-full"
-                          style={{ backgroundColor: getLanguageColor(language) }}
+                          style={{ backgroundColor: getLanguageColor(language, index) }}
                         />
                         <span className="font-medium">{language}</span>
                       </div>
@@ -292,13 +279,15 @@ export function RepositoryInsights({
                         {percentage.toFixed(1)}%
                       </span>
                     </div>
-                    <Progress 
-                      value={percentage} 
-                      className="h-2"
-                      style={{
-                        backgroundColor: `${getLanguageColor(language)}20`
-                      }}
-                    />
+                    <div className="w-full bg-muted rounded-full h-2">
+                      <div 
+                        className="h-2 rounded-full transition-all duration-500"
+                        style={{ 
+                          width: `${percentage}%`,
+                          backgroundColor: getLanguageColor(language, index)
+                        }}
+                      />
+                    </div>
                   </div>
                 ))}
               </div>

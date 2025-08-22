@@ -20,6 +20,7 @@ import { RepositoryComparisonData, ComparisonMetrics } from '@/lib/types';
 import { AddRepositoryDialog } from '@/components/AddRepositoryDialog';
 import { githubAPI } from '@/lib/github';
 import { toast } from 'sonner';
+import { useChartColors } from '@/hooks/useChartColors';
 
 interface RepositoryComparisonProps {
   repositories: RepositoryComparisonData[];
@@ -32,6 +33,8 @@ export function RepositoryComparison({
   onAddRepository, 
   onRemoveRepository 
 }: RepositoryComparisonProps) {
+  const { statusColors, semanticColors } = useChartColors();
+  
   // Calculate metrics for each repository
   const calculateMetrics = (repo: RepositoryComparisonData): ComparisonMetrics => {
     const now = new Date();
@@ -91,17 +94,17 @@ export function RepositoryComparison({
     return `${weeks}w ago`;
   };
 
-  const getSuccessRateColor = (rate: number): string => {
-    if (rate >= 90) return 'text-green-600';
-    if (rate >= 70) return 'text-yellow-600';
-    return 'text-red-600';
+  const getSuccessRateColor = (rate: number): React.CSSProperties => {
+    if (rate >= 90) return { color: statusColors.success };
+    if (rate >= 70) return { color: statusColors.pending };
+    return { color: statusColors.failure };
   };
 
   const getActivityLevel = (frequency: number): { label: string; color: string } => {
-    if (frequency >= 2) return { label: 'High', color: 'bg-green-500' };
-    if (frequency >= 0.5) return { label: 'Medium', color: 'bg-yellow-500' };
-    if (frequency > 0) return { label: 'Low', color: 'bg-orange-500' };
-    return { label: 'Inactive', color: 'bg-gray-400' };
+    if (frequency >= 2) return { label: 'High', color: statusColors.success };
+    if (frequency >= 0.5) return { label: 'Medium', color: statusColors.pending };
+    if (frequency > 0) return { label: 'Low', color: semanticColors.accent };
+    return { label: 'Inactive', color: statusColors.cancelled };
   };
 
   if (repositories.length === 0) {
@@ -189,7 +192,10 @@ export function RepositoryComparison({
               <CardContent className="space-y-3">
                 {/* Activity Badge */}
                 <div className="flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${activity.color}`} />
+                  <div 
+                    className="w-2 h-2 rounded-full" 
+                    style={{ backgroundColor: activity.color }}
+                  />
                   <span className="text-xs font-medium">{activity.label} Activity</span>
                   <span className="text-xs text-muted-foreground">
                     {repoMetrics.commitFrequency.toFixed(1)} commits/day
@@ -199,19 +205,31 @@ export function RepositoryComparison({
                 {/* Key Metrics */}
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   <div className="flex items-center gap-1">
-                    <GitPullRequest className="w-3 h-3 text-blue-500" />
+                    <GitPullRequest 
+                      className="w-3 h-3" 
+                      style={{ color: semanticColors.primary }}
+                    />
                     <span>{repoMetrics.prCount} PRs</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <GitBranch className="w-3 h-3 text-purple-500" />
+                    <GitBranch 
+                      className="w-3 h-3" 
+                      style={{ color: semanticColors.accent }}
+                    />
                     <span>{repoMetrics.activeBranches} active</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <Users className="w-3 h-3 text-green-500" />
+                    <Users 
+                      className="w-3 h-3" 
+                      style={{ color: statusColors.success }}
+                    />
                     <span>{repoMetrics.contributorCount}</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <Code className="w-3 h-3 text-orange-500" />
+                    <Code 
+                      className="w-3 h-3" 
+                      style={{ color: semanticColors.secondary }}
+                    />
                     <span className="truncate">{repoMetrics.mainLanguage}</span>
                   </div>
                 </div>
@@ -220,11 +238,20 @@ export function RepositoryComparison({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1">
                     {repoMetrics.successRate >= 90 ? (
-                      <CheckCircle className="w-3 h-3 text-green-500" />
+                      <CheckCircle 
+                        className="w-3 h-3" 
+                        style={{ color: statusColors.success }}
+                      />
                     ) : (
-                      <XCircle className="w-3 h-3 text-red-500" />
+                      <XCircle 
+                        className="w-3 h-3" 
+                        style={{ color: statusColors.failure }}
+                      />
                     )}
-                    <span className={`text-xs font-medium ${getSuccessRateColor(repoMetrics.successRate)}`}>
+                    <span 
+                      className="text-xs font-medium" 
+                      style={getSuccessRateColor(repoMetrics.successRate)}
+                    >
                       {repoMetrics.successRate.toFixed(0)}% success
                     </span>
                   </div>
@@ -239,7 +266,9 @@ export function RepositoryComparison({
                   <div className="text-xs text-muted-foreground">Updating...</div>
                 )}
                 {repo.error && (
-                  <div className="text-xs text-red-500">Error: {repo.error}</div>
+                  <div className="text-xs" style={{ color: statusColors.failure }}>
+                    Error: {repo.error}
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -291,7 +320,10 @@ export function RepositoryComparison({
                         </td>
                         <td className="text-center py-3">
                           <Badge variant="secondary" className="text-xs">
-                            <div className={`w-2 h-2 rounded-full ${activity.color} mr-1`} />
+                            <div 
+                              className="w-2 h-2 rounded-full mr-1"
+                              style={{ backgroundColor: activity.color }}
+                            />
                             {activity.label}
                           </Badge>
                         </td>
@@ -299,7 +331,7 @@ export function RepositoryComparison({
                         <td className="text-center py-3">{repoMetrics.activeBranches}</td>
                         <td className="text-center py-3">{repoMetrics.contributorCount}</td>
                         <td className="text-center py-3">
-                          <span className={getSuccessRateColor(repoMetrics.successRate)}>
+                          <span style={getSuccessRateColor(repoMetrics.successRate)}>
                             {repoMetrics.successRate.toFixed(0)}%
                           </span>
                         </td>

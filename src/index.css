@@ -34,6 +34,18 @@
   --border: oklch(0.85 0.01 240);
   --input: oklch(0.85 0.01 240);
   --ring: oklch(0.45 0.15 240);
+
+  /* Chart colors for light mode - optimized for visibility */
+  --chart-success: oklch(0.45 0.18 142);
+  --chart-warning: oklch(0.55 0.20 45);
+  --chart-danger: oklch(0.55 0.20 15);
+  --chart-info: oklch(0.50 0.15 210);
+  --chart-purple: oklch(0.50 0.18 280);
+  --chart-pink: oklch(0.55 0.20 340);
+  --chart-teal: oklch(0.45 0.18 180);
+  --chart-orange: oklch(0.55 0.20 30);
+  --chart-cyan: oklch(0.50 0.15 190);
+  --chart-gray: oklch(0.40 0.02 240);
 }
 
 .dark {
@@ -59,6 +71,18 @@
   --border: oklch(0.25 0.02 240);
   --input: oklch(0.25 0.02 240);
   --ring: oklch(0.65 0.15 240);
+
+  /* Chart colors for dark mode - brighter for visibility */
+  --chart-success: oklch(0.65 0.18 142);
+  --chart-warning: oklch(0.75 0.20 45);
+  --chart-danger: oklch(0.75 0.20 15);
+  --chart-info: oklch(0.70 0.15 210);
+  --chart-purple: oklch(0.70 0.18 280);
+  --chart-pink: oklch(0.75 0.20 340);
+  --chart-teal: oklch(0.65 0.18 180);
+  --chart-orange: oklch(0.75 0.20 30);
+  --chart-cyan: oklch(0.70 0.15 190);
+  --chart-gray: oklch(0.70 0.02 240);
 }
 
 @theme {
@@ -81,6 +105,18 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+
+  /* Chart color variables mapped to Tailwind */
+  --color-chart-success: var(--chart-success);
+  --color-chart-warning: var(--chart-warning);
+  --color-chart-danger: var(--chart-danger);
+  --color-chart-info: var(--chart-info);
+  --color-chart-purple: var(--chart-purple);
+  --color-chart-pink: var(--chart-pink);
+  --color-chart-teal: var(--chart-teal);
+  --color-chart-orange: var(--chart-orange);
+  --color-chart-cyan: var(--chart-cyan);
+  --color-chart-gray: var(--chart-gray);
 
   --radius-sm: calc(var(--radius) * 0.5);
   --radius-md: var(--radius);
