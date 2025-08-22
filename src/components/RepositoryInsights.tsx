@@ -134,15 +134,15 @@ export function RepositoryInsights({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="activity" className="space-y-4">
+        <Tabs defaultValue="contributors" className="space-y-4">
           <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="activity" className="flex items-center gap-2">
-              <Clock className="w-4 h-4" />
-              Activity
-            </TabsTrigger>
             <TabsTrigger value="contributors" className="flex items-center gap-2">
               <Users className="w-4 h-4" />
               Contributors
+            </TabsTrigger>
+            <TabsTrigger value="activity" className="flex items-center gap-2">
+              <Clock className="w-4 h-4" />
+              Activity
             </TabsTrigger>
             <TabsTrigger value="languages" className="flex items-center gap-2">
               <Code className="w-4 h-4" />
@@ -153,14 +153,6 @@ export function RepositoryInsights({
               File Changes
             </TabsTrigger>
           </TabsList>
-
-          <TabsContent value="activity" className="space-y-4">
-            <ContributionChart
-              commits={commits}
-              contributors={contributors}
-              isLoading={isLoading.contributors}
-            />
-          </TabsContent>
 
           <TabsContent value="contributors" className="space-y-4">
             <div className="flex items-center gap-2 mb-4">
@@ -243,6 +235,14 @@ export function RepositoryInsights({
                 </div>
               )}
             </ScrollArea>
+          </TabsContent>
+
+          <TabsContent value="activity" className="space-y-4">
+            <ContributionChart
+              commits={commits}
+              contributors={contributors}
+              isLoading={isLoading.contributors}
+            />
           </TabsContent>
 
           <TabsContent value="languages" className="space-y-4">
