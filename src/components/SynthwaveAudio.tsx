@@ -62,10 +62,10 @@ export function SynthwaveAudio({ isPlaying = false }: SynthwaveAudioProps) {
       
       const { oscillator, gainNode } = synthNode;
       
-      // Envelope: quick attack, gradual decay
+      // Faster envelope for increased tempo - sharper attack and decay
       gainNode.gain.setValueAtTime(0, startTime);
-      gainNode.gain.linearRampToValueAtTime(0.3, startTime + 0.01);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + noteDuration - 0.01);
+      gainNode.gain.linearRampToValueAtTime(0.25, startTime + 0.008); // Faster attack
+      gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + noteDuration - 0.008);
       gainNode.gain.linearRampToValueAtTime(0, startTime + noteDuration);
       
       oscillator.start(startTime);
@@ -76,19 +76,39 @@ export function SynthwaveAudio({ isPlaying = false }: SynthwaveAudioProps) {
   const playBassDrone = () => {
     if (!audioContextRef.current) return null;
 
-    const synthNode = createSynthwaveOscillator(55, 'square'); // Low A
-    if (!synthNode) return null;
+    const createDroneOscillator = (freq: number) => {
+      const synthNode = createSynthwaveOscillator(freq, 'square');
+      if (!synthNode) return null;
+      
+      const { oscillator, gainNode } = synthNode;
+      
+      // Slow attack for ambient bass
+      gainNode.gain.setValueAtTime(0, audioContextRef.current!.currentTime);
+      gainNode.gain.linearRampToValueAtTime(0.08, audioContextRef.current!.currentTime + 2);
+      
+      oscillator.start();
+      oscillatorsRef.current.push(oscillator);
+      
+      return oscillator;
+    };
+
+    // Create multiple bass frequencies for richer sound
+    const bassFreqs = [55, 110]; // Low A and A octave
+    bassFreqs.forEach(freq => createDroneOscillator(freq));
     
-    const { oscillator, gainNode } = synthNode;
+    // Schedule bass drone renewal to maintain continuous loop
+    const renewDrone = () => {
+      if (!isPlayingRef.current) return;
+      
+      // Create new bass drone before the old one fades
+      bassFreqs.forEach(freq => createDroneOscillator(freq));
+      
+      // Schedule next renewal
+      setTimeout(renewDrone, 8000); // Every 8 seconds
+    };
     
-    // Slow attack for ambient bass
-    gainNode.gain.setValueAtTime(0, audioContextRef.current.currentTime);
-    gainNode.gain.linearRampToValueAtTime(0.1, audioContextRef.current.currentTime + 2);
-    
-    oscillator.start();
-    oscillatorsRef.current.push(oscillator);
-    
-    return oscillator;
+    // Start renewal cycle
+    setTimeout(renewDrone, 8000);
   };
 
   const playRepeatingPattern = () => {
@@ -99,7 +119,7 @@ export function SynthwaveAudio({ isPlaying = false }: SynthwaveAudioProps) {
     // Start bass drone
     playBassDrone();
     
-    // Play arpeggios at intervals
+    // Play arpeggios at intervals with 20% faster tempo
     const playPattern = () => {
       if (!isPlayingRef.current) return;
       
@@ -115,30 +135,45 @@ export function SynthwaveAudio({ isPlaying = false }: SynthwaveAudioProps) {
       chord.forEach((freq, index) => {
         setTimeout(() => {
           if (isPlayingRef.current) {
-            playArpeggio(freq, 1.5);
+            // 20% faster arpeggio duration: 1.5 / 1.2 = 1.25
+            playArpeggio(freq, 1.25);
           }
-        }, index * 200);
+        }, index * 167); // 20% faster timing: 200 / 1.2 = 167ms
       });
       
-      // Schedule next pattern
-      setTimeout(playPattern, 4000 + Math.random() * 2000);
+      // Schedule next pattern with 20% faster timing and ensure continuous loop
+      const nextDelay = 3333 + Math.random() * 1667; // (4000 + 2000) / 1.2 = faster tempo
+      setTimeout(playPattern, nextDelay);
     };
     
-    // Start the pattern
-    setTimeout(playPattern, 1000);
+    // Start the pattern immediately for seamless loop
+    playPattern();
   };
 
   const stopSynthwave = () => {
     isPlayingRef.current = false;
     
-    oscillatorsRef.current.forEach(osc => {
-      try {
-        osc.stop();
-      } catch (e) {
-        // Oscillator might already be stopped
+    // Gracefully fade out and stop all oscillators
+    if (gainNodeRef.current && audioContextRef.current) {
+      gainNodeRef.current.gain.linearRampToValueAtTime(0, audioContextRef.current.currentTime + 0.5);
+    }
+    
+    // Stop oscillators after fade out
+    setTimeout(() => {
+      oscillatorsRef.current.forEach(osc => {
+        try {
+          osc.stop();
+        } catch (e) {
+          // Oscillator might already be stopped
+        }
+      });
+      oscillatorsRef.current = [];
+      
+      // Reset gain for next play
+      if (gainNodeRef.current && audioContextRef.current) {
+        gainNodeRef.current.gain.setValueAtTime(0.1, audioContextRef.current.currentTime);
       }
-    });
-    oscillatorsRef.current = [];
+    }, 600);
   };
 
   // Control audio based on props and theme
