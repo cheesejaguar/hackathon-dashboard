@@ -12,10 +12,11 @@ import { CommitFlow } from '@/components/CommitFlow';
 import { BranchMonitor } from '@/components/BranchMonitor';
 import { PullRequestDashboard } from '@/components/PullRequestDashboard';
 import { ActionStatus } from '@/components/ActionStatus';
+import { RepositoryInsights } from '@/components/RepositoryInsights';
 
 import { useGitHubAuth } from '@/hooks/useGitHubAuth';
 import { githubAPI } from '@/lib/github';
-import { Repository, Commit, Branch, PullRequest, WorkflowRun } from '@/lib/types';
+import { Repository, Commit, Branch, PullRequest, WorkflowRun, ContributorStats, LanguageStats, FileChange } from '@/lib/types';
 
 function App() {
   const auth = useGitHubAuth();
@@ -25,6 +26,9 @@ function App() {
   const [branches, setBranches] = useState<Branch[]>([]);
   const [pullRequests, setPullRequests] = useState<PullRequest[]>([]);
   const [workflowRuns, setWorkflowRuns] = useState<WorkflowRun[]>([]);
+  const [contributors, setContributors] = useState<ContributorStats[]>([]);
+  const [languages, setLanguages] = useState<LanguageStats>({});
+  const [recentFileChanges, setRecentFileChanges] = useState<Array<{commit: Commit, files: FileChange[]}>>([]);
   
   const [loading, setLoading] = useState({
     repository: false,
@@ -32,6 +36,9 @@ function App() {
     branches: false,
     pullRequests: false,
     workflowRuns: false,
+    contributors: false,
+    languages: false,
+    fileChanges: false,
   });
   
   const [error, setError] = useState<string | null>(null);
@@ -71,6 +78,9 @@ function App() {
       loadBranches(owner, repo),
       loadPullRequests(owner, repo),
       loadWorkflowRuns(owner, repo),
+      loadContributors(owner, repo),
+      loadLanguages(owner, repo),
+      loadFileChanges(owner, repo),
     ];
 
     await Promise.allSettled(loadingPromises);
@@ -125,6 +135,42 @@ function App() {
     }
   };
 
+  const loadContributors = async (owner: string, repo: string) => {
+    setLoading(prev => ({ ...prev, contributors: true }));
+    try {
+      const contributorsData = await githubAPI.getContributors(owner, repo);
+      setContributors(contributorsData);
+    } catch (err) {
+      console.error('Failed to load contributors:', err);
+    } finally {
+      setLoading(prev => ({ ...prev, contributors: false }));
+    }
+  };
+
+  const loadLanguages = async (owner: string, repo: string) => {
+    setLoading(prev => ({ ...prev, languages: true }));
+    try {
+      const languagesData = await githubAPI.getLanguages(owner, repo);
+      setLanguages(languagesData);
+    } catch (err) {
+      console.error('Failed to load languages:', err);
+    } finally {
+      setLoading(prev => ({ ...prev, languages: false }));
+    }
+  };
+
+  const loadFileChanges = async (owner: string, repo: string) => {
+    setLoading(prev => ({ ...prev, fileChanges: true }));
+    try {
+      const fileChangesData = await githubAPI.getRecentCommitsWithFiles(owner, repo);
+      setRecentFileChanges(fileChangesData);
+    } catch (err) {
+      console.error('Failed to load file changes:', err);
+    } finally {
+      setLoading(prev => ({ ...prev, fileChanges: false }));
+    }
+  };
+
   const handleRefresh = async () => {
     if (!currentRepo) return;
     
@@ -140,6 +186,9 @@ function App() {
     setBranches([]);
     setPullRequests([]);
     setWorkflowRuns([]);
+    setContributors([]);
+    setLanguages({});
+    setRecentFileChanges([]);
     setError(null);
     setLastRefresh(null);
   };
@@ -250,7 +299,7 @@ function App() {
         <Separator />
 
         {/* Dashboard grid */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           {/* Left column */}
           <div className="space-y-6">
             <CommitFlow commits={commits} isLoading={loading.commits} />
@@ -267,7 +316,7 @@ function App() {
             />
           </div>
 
-          {/* Right column */}
+          {/* Middle column */}
           <div className="space-y-6">
             <div className="hidden xl:block">
               <PullRequestDashboard 
@@ -278,6 +327,20 @@ function App() {
             <ActionStatus 
               workflowRuns={workflowRuns} 
               isLoading={loading.workflowRuns} 
+            />
+          </div>
+
+          {/* Right column - Insights */}
+          <div className="xl:col-span-1">
+            <RepositoryInsights
+              contributors={contributors}
+              languages={languages}
+              recentFileChanges={recentFileChanges}
+              isLoading={{
+                contributors: loading.contributors,
+                languages: loading.languages,
+                fileChanges: loading.fileChanges
+              }}
             />
           </div>
         </div>

@@ -45,14 +45,19 @@
 - **Success Criteria**: Users can quickly find and select repositories from their collection
 
 ### Live Repository Dashboard
-- **Functionality**: Real-time monitoring of commits, branches, pull requests, and GitHub Actions
-- **Purpose**: Centralized view of repository activity and status
-- **Success Criteria**: Data updates automatically, shows current status accurately
+- **Functionality**: Real-time monitoring of commits, branches, pull requests, GitHub Actions, and repository insights
+- **Purpose**: Centralized view of repository activity, status, and development patterns
+- **Success Criteria**: Data updates automatically, shows current status accurately, provides analytical insights
 
 ### Auto-refresh & Manual Controls
 - **Functionality**: Automatic 30-second refresh with manual refresh and repository switching
 - **Purpose**: Keep data current while providing user control
 - **Success Criteria**: Users see live updates and can manually refresh or change repositories
+
+### Repository Insights & Analytics
+- **Functionality**: Contributor activity analysis, language composition, and file change patterns
+- **Purpose**: Provide deeper understanding of repository development patterns and team contributions
+- **Success Criteria**: Users can analyze contributor activity over time periods, see language distribution, and track recent file changes
 
 ## Design Direction
 
@@ -102,11 +107,13 @@
 ### UI Elements & Component Selection
 **Component Usage**: 
 - Cards for repository information and dashboard sections
+- Tabs for organizing insights data (contributors, languages, file changes)
 - Buttons for primary actions (login, select, refresh)
 - Input fields for search and token entry
-- Avatars for user profiles
-- Badges for status indicators
-- ScrollArea for repository lists
+- Avatars for user profiles and contributor display
+- Badges for status indicators and activity metrics
+- ScrollArea for repository lists and contributor activity
+- Progress bars for language distribution visualization
 
 **Component Customization**: Tailwind utilities for consistent spacing, colors, and responsive behavior
 **Component States**: Clear hover, active, disabled, and loading states for all interactive elements

@@ -100,3 +100,42 @@ export interface CheckRun {
   completed_at: string | null;
   html_url: string;
 }
+
+export interface ContributorStats {
+  author: {
+    login: string;
+    avatar_url: string;
+    html_url: string;
+  } | null;
+  total: number;
+  weeks: Array<{
+    w: number; // Week timestamp
+    a: number; // Additions
+    d: number; // Deletions
+    c: number; // Commits
+  }>;
+}
+
+export interface FileChange {
+  filename: string;
+  additions: number;
+  deletions: number;
+  changes: number;
+  status: 'added' | 'removed' | 'modified' | 'renamed';
+  patch?: string;
+}
+
+export interface LanguageStats {
+  [language: string]: number;
+}
+
+export interface RepositoryInsights {
+  contributors: ContributorStats[];
+  languages: LanguageStats;
+  totalCommits: number;
+  totalContributors: number;
+  recentFileChanges: {
+    commit: Commit;
+    files: FileChange[];
+  }[];
+}

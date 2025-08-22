@@ -1,4 +1,4 @@
-import { Repository, Commit, Branch, PullRequest, WorkflowRun } from './types';
+import { Repository, Commit, Branch, PullRequest, WorkflowRun, ContributorStats, LanguageStats, FileChange } from './types';
 
 const GITHUB_API_BASE = 'https://api.github.com';
 
@@ -66,6 +66,53 @@ class GitHubAPI {
     );
     const data = await response.json();
     return data.check_runs;
+  }
+
+  async getContributors(owner: string, repo: string): Promise<ContributorStats[]> {
+    const response = await this.fetchWithAuth(
+      `${GITHUB_API_BASE}/repos/${owner}/${repo}/stats/contributors`
+    );
+    
+    // GitHub stats endpoints can return 202 when data is being computed
+    if (response.status === 202) {
+      // Return empty array for now, will be populated on next request
+      return [];
+    }
+    
+    return response.json();
+  }
+
+  async getLanguages(owner: string, repo: string): Promise<LanguageStats> {
+    const response = await this.fetchWithAuth(
+      `${GITHUB_API_BASE}/repos/${owner}/${repo}/languages`
+    );
+    return response.json();
+  }
+
+  async getCommitFiles(owner: string, repo: string, sha: string): Promise<FileChange[]> {
+    const response = await this.fetchWithAuth(
+      `${GITHUB_API_BASE}/repos/${owner}/${repo}/commits/${sha}`
+    );
+    const data = await response.json();
+    return data.files || [];
+  }
+
+  async getRecentCommitsWithFiles(owner: string, repo: string, limit = 10): Promise<Array<{commit: Commit, files: FileChange[]}>> {
+    const commits = await this.getCommits(owner, repo, limit);
+    const commitsWithFiles = [];
+    
+    // Only fetch file details for the first few commits to avoid rate limiting
+    for (const commit of commits.slice(0, 5)) {
+      try {
+        const files = await this.getCommitFiles(owner, repo, commit.sha);
+        commitsWithFiles.push({ commit, files });
+      } catch (error) {
+        // If we can't get files for a commit, just include it without files
+        commitsWithFiles.push({ commit, files: [] });
+      }
+    }
+    
+    return commitsWithFiles;
   }
 }
 
