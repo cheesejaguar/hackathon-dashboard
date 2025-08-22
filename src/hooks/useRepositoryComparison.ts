@@ -88,8 +88,17 @@ export function useRepositoryComparison() {
   const addRepository = useCallback(async (owner: string, repo: string) => {
     const repoKey = `${owner}/${repo}`;
     
-    // Check if already added
-    if (comparedRepos.includes(repoKey)) {
+    // Check if already added using functional update to get latest value
+    let alreadyAdded = false;
+    setComparedRepos(prev => {
+      if (prev.includes(repoKey)) {
+        alreadyAdded = true;
+        return prev;
+      }
+      return prev;
+    });
+    
+    if (alreadyAdded) {
       throw new Error('Repository already added to comparison');
     }
 
@@ -98,7 +107,7 @@ export function useRepositoryComparison() {
     
     // Add to comparison list
     setComparedRepos(prev => [...prev, repoKey]);
-  }, [comparedRepos, loadRepositoryData, setComparedRepos]);
+  }, [loadRepositoryData, setComparedRepos]);
 
   const removeRepository = useCallback((repoKey: string) => {
     setComparedRepos(prev => prev.filter(key => key !== repoKey));
@@ -117,13 +126,21 @@ export function useRepositoryComparison() {
   }, [loadRepositoryData]);
 
   const refreshAllRepositories = useCallback(async () => {
-    const promises = comparedRepos.map(repoKey => {
+    // Get current repos from state to avoid stale closure
+    const currentRepos = await new Promise<string[]>((resolve) => {
+      setComparedRepos(prev => {
+        resolve(prev);
+        return prev;
+      });
+    });
+    
+    const promises = currentRepos.map(repoKey => {
       const [owner, repo] = repoKey.split('/');
       return owner && repo ? loadRepositoryData(owner, repo) : Promise.resolve();
     });
 
     await Promise.allSettled(promises);
-  }, [comparedRepos, loadRepositoryData]);
+  }, [loadRepositoryData, setComparedRepos]);
 
   // Get current repository data as array
   const repositories = comparedRepos
