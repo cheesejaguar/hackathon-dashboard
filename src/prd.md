@@ -2,7 +2,7 @@
 
 ## Core Purpose & Success
 
-**Mission Statement**: A beautiful, real-time dashboard that enables developers to monitor any public GitHub repository activity, with optional authentication for enhanced access to private repositories and higher API rate limits.
+**Mission Statement**: A beautiful, real-time dashboard that enables developers to monitor and compare multiple GitHub repositories simultaneously, with optional authentication for enhanced access to private repositories and higher API rate limits.
 
 **Success Indicators**: 
 - Users can monitor any public repository without authentication
@@ -10,7 +10,8 @@
 - Users can browse and select from their personal repositories when authenticated
 - Live monitoring displays commit flow, branch status, pull requests, and workflow runs
 - Dashboard updates automatically every 30 seconds with fresh data (when authenticated)
-- Seamless user experience from repository input to monitoring
+- Users can compare multiple repositories side-by-side with key metrics
+- Seamless user experience from repository input to monitoring and comparison
 
 **Experience Qualities**: Professional, Reliable, Intuitive
 
@@ -54,6 +55,11 @@
 - **Functionality**: Real-time monitoring of commits, branches, pull requests, GitHub Actions, and repository insights
 - **Purpose**: Centralized view of repository activity, status, and development patterns
 - **Success Criteria**: Data updates automatically, shows current status accurately, provides analytical insights
+
+### Repository Comparison Feature
+- **Functionality**: Side-by-side comparison of multiple repositories with key metrics and activity indicators
+- **Purpose**: Enable developers to compare project health, activity levels, and team dynamics across multiple repositories
+- **Success Criteria**: Users can add/remove repositories from comparison, view comparative metrics, and identify trends across projects
 
 ### Auto-refresh & Manual Controls
 - **Functionality**: Automatic 30-second refresh for authenticated users, manual refresh for all users, and repository switching

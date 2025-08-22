@@ -139,3 +139,26 @@ export interface RepositoryInsights {
     files: FileChange[];
   }[];
 }
+
+export interface RepositoryComparisonData {
+  repository: Repository;
+  commits: Commit[];
+  branches: Branch[];
+  pullRequests: PullRequest[];
+  workflowRuns: WorkflowRun[];
+  contributors: ContributorStats[];
+  languages: LanguageStats;
+  lastUpdate: Date;
+  isLoading: boolean;
+  error: string | null;
+}
+
+export interface ComparisonMetrics {
+  commitFrequency: number; // commits per day
+  prCount: number;
+  activeBranches: number;
+  contributorCount: number;
+  mainLanguage: string;
+  successRate: number; // workflow success rate
+  lastCommitAge: number; // hours since last commit
+}

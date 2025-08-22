@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { useKV } from '@github/spark/hooks';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, RotateCcw, GitBranch } from '@phosphor-icons/react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ArrowLeft, RotateCcw, GitBranch, GitCompare, Monitor } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 
 import { GitHubLogin } from '@/components/GitHubLogin';
@@ -15,14 +16,19 @@ import { BranchMonitor } from '@/components/BranchMonitor';
 import { PullRequestDashboard } from '@/components/PullRequestDashboard';
 import { ActionStatus } from '@/components/ActionStatus';
 import { RepositoryInsights } from '@/components/RepositoryInsights';
+import { RepositoryComparison } from '@/components/RepositoryComparison';
+import { AddRepositoryDialog } from '@/components/AddRepositoryDialog';
 
 import { useGitHubAuth } from '@/hooks/useGitHubAuth';
+import { useRepositoryComparison } from '@/hooks/useRepositoryComparison';
 import { githubAPI } from '@/lib/github';
 import { Repository, Commit, Branch, PullRequest, WorkflowRun, ContributorStats, LanguageStats, FileChange } from '@/lib/types';
 
 function App() {
   const auth = useGitHubAuth();
+  const comparison = useRepositoryComparison();
   const [currentRepo, setCurrentRepo] = useKV<{owner: string, repo: string} | null>('current-repo', null);
+  const [activeView, setActiveView] = useKV<'monitor' | 'compare'>('active-view', 'monitor');
   const [repository, setRepository] = useState<Repository | null>(null);
   const [commits, setCommits] = useState<Commit[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
@@ -232,8 +238,8 @@ function App() {
     }
   }, [currentRepo, repository]);
 
-  // Show repository selection/input if no repository is selected
-  if (!currentRepo || !repository) {
+  // Show repository selection/input if no repository is selected and not in comparison view
+  if ((!currentRepo || !repository) && activeView !== 'compare') {
     return (
       <div className="min-h-screen bg-background">
         {/* Top bar with API setup */}
@@ -244,20 +250,42 @@ function App() {
                 <GitBranch className="w-6 h-6 text-primary" />
                 <h1 className="text-xl font-semibold">GitHub Repository Dashboard</h1>
               </div>
-              <ApiSetup
-                isAuthenticated={auth.isAuthenticated}
-                userLogin={auth.user?.login}
-                onLogin={handleLogin}
-                onLogout={handleLogout}
-                isLoading={auth.isLoading}
-                error={auth.error}
-              />
+              <div className="flex items-center gap-4">
+                <Tabs value={activeView} onValueChange={(value) => setActiveView(value as 'monitor' | 'compare')}>
+                  <TabsList>
+                    <TabsTrigger value="monitor" className="flex items-center gap-2">
+                      <Monitor className="w-4 h-4" />
+                      Monitor
+                    </TabsTrigger>
+                    <TabsTrigger value="compare" className="flex items-center gap-2">
+                      <GitCompare className="w-4 h-4" />
+                      Compare
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+                <ApiSetup
+                  isAuthenticated={auth.isAuthenticated}
+                  userLogin={auth.user?.login}
+                  onLogin={handleLogin}
+                  onLogout={handleLogout}
+                  isLoading={auth.isLoading}
+                  error={auth.error}
+                />
+              </div>
             </div>
           </div>
         </div>
 
         <div className="flex items-center justify-center p-6 min-h-[calc(100vh-80px)]">
-          {auth.isAuthenticated ? (
+          {activeView === 'compare' ? (
+            <div className="w-full max-w-6xl">
+              <RepositoryComparison
+                repositories={comparison.repositories}
+                onAddRepository={() => {}}
+                onRemoveRepository={comparison.removeRepository}
+              />
+            </div>
+          ) : auth.isAuthenticated ? (
             <RepositorySelection 
               user={auth.user!}
               token={auth.token!}
@@ -279,95 +307,129 @@ function App() {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto p-6 space-y-6">
-        {/* Header with back button and refresh */}
-        <div className="flex items-center justify-between">
-          <Button 
-            variant="outline" 
-            onClick={handleBackToSelection}
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Change Repository
-          </Button>
-          
-          <div className="flex items-center gap-4">
-            {lastRefresh && (
-              <span className="text-sm text-muted-foreground">
-                Last updated: {lastRefresh.toLocaleTimeString()}
-              </span>
+        <Tabs value={activeView} onValueChange={(value) => setActiveView(value as 'monitor' | 'compare')}>
+          {/* Header with navigation and controls */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              {activeView === 'monitor' && (
+                <Button 
+                  variant="outline" 
+                  onClick={handleBackToSelection}
+                  className="flex items-center gap-2"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  Change Repository
+                </Button>
+              )}
+              
+              <TabsList>
+                <TabsTrigger value="monitor" className="flex items-center gap-2">
+                  <Monitor className="w-4 h-4" />
+                  Monitor
+                </TabsTrigger>
+                <TabsTrigger value="compare" className="flex items-center gap-2">
+                  <GitCompare className="w-4 h-4" />
+                  Compare
+                </TabsTrigger>
+              </TabsList>
+            </div>
+            
+            <div className="flex items-center gap-4">
+              {activeView === 'monitor' && lastRefresh && (
+                <span className="text-sm text-muted-foreground">
+                  Last updated: {lastRefresh.toLocaleTimeString()}
+                </span>
+              )}
+              {activeView === 'monitor' && (
+                <Button 
+                  variant="outline" 
+                  onClick={handleRefresh}
+                  disabled={Object.values(loading).some(Boolean)}
+                  className="flex items-center gap-2"
+                >
+                  <RotateCcw className={`w-4 h-4 ${Object.values(loading).some(Boolean) ? 'animate-spin' : ''}`} />
+                  Refresh
+                </Button>
+              )}
+              <ApiSetup
+                isAuthenticated={auth.isAuthenticated}
+                userLogin={auth.user?.login}
+                onLogin={handleLogin}
+                onLogout={handleLogout}
+                isLoading={auth.isLoading}
+                error={auth.error}
+              />
+            </div>
+          </div>
+
+          {/* Content based on active view */}
+          <TabsContent value="monitor" className="mt-6">
+            {repository && (
+              <>
+                {/* Repository header */}
+                <RepositoryHeader repository={repository} />
+
+                <Separator />
+
+                {/* Dashboard grid */}
+                <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mt-6">
+                  {/* Left column */}
+                  <div className="space-y-6">
+                    <CommitFlow commits={commits} isLoading={loading.commits} />
+                    <div className="xl:hidden">
+                      <PullRequestDashboard 
+                        pullRequests={pullRequests} 
+                        isLoading={loading.pullRequests} 
+                      />
+                    </div>
+                    <BranchMonitor 
+                      branches={branches} 
+                      defaultBranch={repository.default_branch}
+                      isLoading={loading.branches} 
+                    />
+                  </div>
+
+                  {/* Middle column */}
+                  <div className="space-y-6">
+                    <div className="hidden xl:block">
+                      <PullRequestDashboard 
+                        pullRequests={pullRequests} 
+                        isLoading={loading.pullRequests} 
+                      />
+                    </div>
+                    <ActionStatus 
+                      workflowRuns={workflowRuns} 
+                      isLoading={loading.workflowRuns} 
+                    />
+                  </div>
+
+                  {/* Right column - Insights */}
+                  <div className="xl:col-span-1">
+                    <RepositoryInsights
+                      contributors={contributors}
+                      languages={languages}
+                      recentFileChanges={recentFileChanges}
+                      commits={commits}
+                      isLoading={{
+                        contributors: loading.contributors,
+                        languages: loading.languages,
+                        fileChanges: loading.fileChanges
+                      }}
+                    />
+                  </div>
+                </div>
+              </>
             )}
-            <Button 
-              variant="outline" 
-              onClick={handleRefresh}
-              disabled={Object.values(loading).some(Boolean)}
-              className="flex items-center gap-2"
-            >
-              <RotateCcw className={`w-4 h-4 ${Object.values(loading).some(Boolean) ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
-            <ApiSetup
-              isAuthenticated={auth.isAuthenticated}
-              userLogin={auth.user?.login}
-              onLogin={handleLogin}
-              onLogout={handleLogout}
-              isLoading={auth.isLoading}
-              error={auth.error}
+          </TabsContent>
+
+          <TabsContent value="compare" className="mt-6">
+            <RepositoryComparison
+              repositories={comparison.repositories}
+              onAddRepository={comparison.addRepository}
+              onRemoveRepository={comparison.removeRepository}
             />
-          </div>
-        </div>
-
-        {/* Repository header */}
-        <RepositoryHeader repository={repository} />
-
-        <Separator />
-
-        {/* Dashboard grid */}
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-          {/* Left column */}
-          <div className="space-y-6">
-            <CommitFlow commits={commits} isLoading={loading.commits} />
-            <div className="xl:hidden">
-              <PullRequestDashboard 
-                pullRequests={pullRequests} 
-                isLoading={loading.pullRequests} 
-              />
-            </div>
-            <BranchMonitor 
-              branches={branches} 
-              defaultBranch={repository.default_branch}
-              isLoading={loading.branches} 
-            />
-          </div>
-
-          {/* Middle column */}
-          <div className="space-y-6">
-            <div className="hidden xl:block">
-              <PullRequestDashboard 
-                pullRequests={pullRequests} 
-                isLoading={loading.pullRequests} 
-              />
-            </div>
-            <ActionStatus 
-              workflowRuns={workflowRuns} 
-              isLoading={loading.workflowRuns} 
-            />
-          </div>
-
-          {/* Right column - Insights */}
-          <div className="xl:col-span-1">
-            <RepositoryInsights
-              contributors={contributors}
-              languages={languages}
-              recentFileChanges={recentFileChanges}
-              commits={commits}
-              isLoading={{
-                contributors: loading.contributors,
-                languages: loading.languages,
-                fileChanges: loading.fileChanges
-              }}
-            />
-          </div>
-        </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
