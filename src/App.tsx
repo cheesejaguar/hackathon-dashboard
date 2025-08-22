@@ -21,10 +21,12 @@ import { AddRepositoryDialog } from '@/components/AddRepositoryDialog';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { SynthwaveVisualizer } from '@/components/SynthwaveVisualizer';
 import { SynthwaveAudio } from '@/components/SynthwaveAudio';
+import { ParticleBurst } from '@/components/ParticleBurst';
 
 import { useGitHubAuth } from '@/hooks/useGitHubAuth';
 import { useRepositoryComparison } from '@/hooks/useRepositoryComparison';
 import { useTheme } from '@/hooks/useTheme';
+import { useBurstMode } from '@/hooks/useBurstMode';
 import { githubAPI } from '@/lib/github';
 import { Repository, Commit, Branch, PullRequest, WorkflowRun, ContributorStats, LanguageStats, FileChange } from '@/lib/types';
 
@@ -42,6 +44,9 @@ function App() {
   const [contributors, setContributors] = useState<ContributorStats[]>([]);
   const [languages, setLanguages] = useState<LanguageStats>({});
   const [recentFileChanges, setRecentFileChanges] = useState<Array<{commit: Commit, files: FileChange[]}>>([]);
+  
+  // Burst mode hook for enhanced particle effects
+  const burstMode = useBurstMode(commits, pullRequests, workflowRuns, theme === 'vibes');
   
   const [loading, setLoading] = useState({
     repository: false,
@@ -255,6 +260,14 @@ function App() {
           isActive={false}
         />
         
+        {/* Particle Burst Effects - not active without repository */}
+        <ParticleBurst
+          commits={[]}
+          pullRequests={[]}
+          workflowRuns={[]}
+          isActive={false}
+        />
+        
         {/* Top bar with API setup */}
         <div className="border-b bg-card/50 backdrop-blur">
           <div className="container mx-auto px-6 py-4">
@@ -319,9 +332,17 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className={`min-h-screen bg-background ${theme === 'vibes' ? burstMode.getBurstClassName() : ''}`}>
       {/* Synthwave Visualizer - only active in vibes mode */}
       <SynthwaveVisualizer
+        commits={commits}
+        pullRequests={pullRequests}
+        workflowRuns={workflowRuns}
+        isActive={theme === 'vibes' && !!repository}
+      />
+      
+      {/* Particle Burst Effects - intense activity bursts in vibes mode */}
+      <ParticleBurst
         commits={commits}
         pullRequests={pullRequests}
         workflowRuns={workflowRuns}

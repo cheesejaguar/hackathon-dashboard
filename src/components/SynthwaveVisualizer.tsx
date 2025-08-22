@@ -82,7 +82,7 @@ export function SynthwaveVisualizer({ commits, pullRequests, workflowRuns, isAct
     setLastActivity(new Date());
   };
 
-  // Monitor repository activity changes
+  // Monitor repository activity changes with enhanced intensity tracking
   useEffect(() => {
     const recentCommits = commits.filter(commit => 
       new Date(commit.commit.author.date) > new Date(Date.now() - 5 * 60 * 1000)
@@ -96,21 +96,55 @@ export function SynthwaveVisualizer({ commits, pullRequests, workflowRuns, isAct
       new Date(run.updated_at) > new Date(Date.now() - 5 * 60 * 1000)
     );
 
+    // Enhanced particle creation with intensity scaling
     if (recentCommits.length > 0) {
-      createParticles('commit', Math.min(recentCommits.length, 5));
+      const intensity = Math.min(recentCommits.length, 10);
+      createParticles('commit', intensity * 2); // More particles for recent commits
+      
+      // Boost wave animation intensity
+      waveBarsRef.current.forEach((bar, i) => {
+        bar.targetHeight = Math.random() * 80 + 40; // Higher waves
+        bar.glowIntensity = Math.random() * 1.0 + 0.6; // Brighter glow
+      });
     }
     
     if (recentPRs.length > 0) {
-      createParticles('pr', Math.min(recentPRs.length, 3));
+      const intensity = Math.min(recentPRs.length, 6);
+      createParticles('pr', intensity * 2);
+      
+      // Create ripple effect in wave bars
+      const centerBar = Math.floor(waveBarsRef.current.length / 2);
+      for (let i = 0; i < waveBarsRef.current.length; i++) {
+        const distance = Math.abs(i - centerBar);
+        const rippleDelay = distance * 100;
+        setTimeout(() => {
+          if (waveBarsRef.current[i]) {
+            waveBarsRef.current[i].targetHeight = Math.random() * 60 + 30;
+            waveBarsRef.current[i].glowIntensity = Math.random() * 0.9 + 0.5;
+          }
+        }, rippleDelay);
+      }
     }
     
     recentRuns.forEach(run => {
       if (run.conclusion === 'success') {
-        createParticles('success', 2);
+        createParticles('success', 4);
+        // Success creates synchronized wave pattern
+        waveBarsRef.current.forEach((bar, i) => {
+          bar.targetHeight = Math.sin(i * 0.5) * 30 + 50;
+          bar.glowIntensity = 0.8;
+        });
       } else if (run.conclusion === 'failure') {
-        createParticles('failure', 3);
+        createParticles('failure', 6);
+        // Failure creates chaotic wave pattern
+        waveBarsRef.current.forEach((bar) => {
+          bar.targetHeight = Math.random() * 70 + 20;
+          bar.glowIntensity = Math.random() * 1.0 + 0.4;
+        });
       }
     });
+    
+    setLastActivity(new Date());
   }, [commits, pullRequests, workflowRuns]);
 
   // Animation loop
