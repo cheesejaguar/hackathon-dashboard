@@ -138,7 +138,7 @@ export function ContributionChart({ commits, contributors, isLoading }: Contribu
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {Array.from({ length: 6 }).map((_, i) => ( {/* Show 6 loading items to match minimum */}
+            {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="flex items-center gap-4">
                 <Skeleton className="w-24 h-6" />
                 <div className="flex gap-1">

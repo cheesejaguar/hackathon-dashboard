@@ -172,10 +172,10 @@ export function RepositoryInsights({
               </div>
             </div>
 
-            <ScrollArea className="h-[600px]">{/* Increased height to accommodate more users */}
+            <ScrollArea className="h-[600px]">
               {isLoading.contributors ? (
                 <div className="space-y-3">
-                  {Array.from({ length: 8 }).map((_, i) => ( {/* Show more loading skeletons */}
+                  {Array.from({ length: 8 }).map((_, i) => (
                     <div key={i} className="flex items-center gap-3">
                       <Skeleton className="h-10 w-10 rounded-full" />
                       <div className="space-y-2 flex-1">
