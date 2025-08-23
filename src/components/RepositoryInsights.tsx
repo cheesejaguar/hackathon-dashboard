@@ -83,14 +83,14 @@ export function RepositoryInsights({
       );
   };
 
-  // Sort contributors by recent activity
+  // Sort contributors by recent activity, ensuring we show at least 6 users
   const sortedContributors = [...contributors]
     .map(contributor => ({
       ...contributor,
       activity: getContributorActivity(contributor)
     }))
     .sort((a, b) => b.activity.commits - a.activity.commits)
-    .slice(0, 10); // Show top 10 contributors
+    .slice(0, Math.max(15, contributors.length)); // Show up to 15 contributors to ensure good coverage
 
   // Calculate file change patterns
   const fileChangePatterns = recentFileChanges.reduce((acc, { files }) => {
@@ -130,7 +130,7 @@ export function RepositoryInsights({
           Repository Insights
         </CardTitle>
         <CardDescription>
-          Contributor activity, language usage, and file change patterns
+          Extended contributor activity, language usage, and file change patterns
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -138,7 +138,7 @@ export function RepositoryInsights({
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="contributors" className="flex items-center gap-2">
               <Users className="w-4 h-4" />
-              Contributors
+              Contributors {!isLoading.contributors && sortedContributors.length > 0 && `(${sortedContributors.length})`}
             </TabsTrigger>
             <TabsTrigger value="activity" className="flex items-center gap-2">
               <Clock className="w-4 h-4" />
@@ -172,10 +172,10 @@ export function RepositoryInsights({
               </div>
             </div>
 
-            <ScrollArea className="h-[400px]">
+            <ScrollArea className="h-[500px]">{/* Increased height to accommodate more users */}
               {isLoading.contributors ? (
                 <div className="space-y-3">
-                  {Array.from({ length: 5 }).map((_, i) => (
+                  {Array.from({ length: 8 }).map((_, i) => ( {/* Show more loading skeletons */}
                     <div key={i} className="flex items-center gap-3">
                       <Skeleton className="h-10 w-10 rounded-full" />
                       <div className="space-y-2 flex-1">

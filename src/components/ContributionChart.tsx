@@ -26,7 +26,7 @@ export function ContributionChart({ commits, contributors, isLoading }: Contribu
   const { colors, theme } = useChartColors();
   
   const contributionData = useMemo(() => {
-    if (!commits.length || !contributors.length) return [];
+    if (!contributors.length) return [];
 
     // Get the last 12 hours
     const now = new Date();
@@ -40,24 +40,26 @@ export function ContributionChart({ commits, contributors, isLoading }: Contribu
     // Group commits by author and hour
     const userCommitsByHour = new Map<string, Map<number, number>>();
 
-    commits.forEach(commit => {
-      const commitDate = new Date(commit.commit.committer.date);
-      const commitHour = new Date(commitDate);
-      commitHour.setMinutes(0, 0, 0);
-      
-      // Only include commits from the last 12 hours
-      if (commitHour >= hours[0] && commitHour <= now) {
-        const author = commit.author?.login || commit.commit.author.name;
-        const hourKey = commitHour.getTime();
+    if (commits.length > 0) {
+      commits.forEach(commit => {
+        const commitDate = new Date(commit.commit.committer.date);
+        const commitHour = new Date(commitDate);
+        commitHour.setMinutes(0, 0, 0);
         
-        if (!userCommitsByHour.has(author)) {
-          userCommitsByHour.set(author, new Map());
+        // Only include commits from the last 12 hours
+        if (commitHour >= hours[0] && commitHour <= now) {
+          const author = commit.author?.login || commit.commit.author.name;
+          const hourKey = commitHour.getTime();
+          
+          if (!userCommitsByHour.has(author)) {
+            userCommitsByHour.set(author, new Map());
+          }
+          
+          const userHours = userCommitsByHour.get(author)!;
+          userHours.set(hourKey, (userHours.get(hourKey) || 0) + 1);
         }
-        
-        const userHours = userCommitsByHour.get(author)!;
-        userHours.set(hourKey, (userHours.get(hourKey) || 0) + 1);
-      }
-    });
+      });
+    }
 
     // Create contribution data for each contributor
     const contributionData: UserContribution[] = contributors
@@ -77,10 +79,22 @@ export function ContributionChart({ commits, contributors, isLoading }: Contribu
           totalCommits
         };
       })
-      .filter(data => data.totalCommits > 0) // Only show users with commits in the last 12 hours
-      .sort((a, b) => b.totalCommits - a.totalCommits); // Sort by total commits descending
+      .sort((a, b) => {
+        // First sort by recent activity, then by total contributions
+        if (b.totalCommits !== a.totalCommits) {
+          return b.totalCommits - a.totalCommits;
+        }
+        return b.user.total - a.user.total;
+      });
 
-    return contributionData;
+    // Ensure we show at least 6 users, but prioritize those with recent activity
+    const minUsersToShow = 6;
+    const maxUsersToShow = 12;
+    
+    // Take the top contributors, ensuring at least 6 are shown
+    const finalData = contributionData.slice(0, Math.max(minUsersToShow, Math.min(maxUsersToShow, contributors.length)));
+
+    return finalData;
   }, [commits, contributors]);
 
   const maxCommitsInHour = useMemo(() => {
@@ -124,7 +138,7 @@ export function ContributionChart({ commits, contributors, isLoading }: Contribu
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {Array.from({ length: 3 }).map((_, i) => (
+            {Array.from({ length: 6 }).map((_, i) => ( {/* Show 6 loading items to match minimum */}
               <div key={i} className="flex items-center gap-4">
                 <Skeleton className="w-24 h-6" />
                 <div className="flex gap-1">
@@ -148,7 +162,8 @@ export function ContributionChart({ commits, contributors, isLoading }: Contribu
         </CardHeader>
         <CardContent>
           <div className="text-center py-8 text-muted-foreground">
-            No commits in the last 12 hours
+            <div className="mb-4">No commits in the last 12 hours</div>
+            <div className="text-sm">Showing top contributors by total activity</div>
           </div>
         </CardContent>
       </Card>
@@ -167,7 +182,12 @@ export function ContributionChart({ commits, contributors, isLoading }: Contribu
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
-          Recent Activity (Last 12 Hours)
+          <div>
+            Recent Activity (Last 12 Hours)
+            <div className="text-sm font-normal text-muted-foreground">
+              Showing top contributors {contributionData.length >= 6 ? `(${contributionData.length} users)` : '(minimum 6 users)'}
+            </div>
+          </div>
           <div className="flex items-center gap-2 text-sm font-normal">
             <span className="text-muted-foreground">Less</span>
             <div className="flex gap-1">
