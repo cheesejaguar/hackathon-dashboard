@@ -123,7 +123,7 @@ export function RepositoryInsights({
   };
 
   return (
-    <Card>
+    <Card className="h-[120%]">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <TrendingUp className="w-5 h-5" />
@@ -133,8 +133,8 @@ export function RepositoryInsights({
           Extended contributor activity, language usage, and file change patterns
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        <Tabs defaultValue="contributors" className="space-y-4">
+      <CardContent className="h-[calc(100%-120px)]">
+        <Tabs defaultValue="contributors" className="space-y-4 h-full">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="contributors" className="flex items-center gap-2">
               <Users className="w-4 h-4" />
@@ -172,7 +172,7 @@ export function RepositoryInsights({
               </div>
             </div>
 
-            <ScrollArea className="h-[500px]">{/* Increased height to accommodate more users */}
+            <ScrollArea className="h-[600px]">{/* Increased height to accommodate more users */}
               {isLoading.contributors ? (
                 <div className="space-y-3">
                   {Array.from({ length: 8 }).map((_, i) => ( {/* Show more loading skeletons */}
@@ -348,7 +348,7 @@ export function RepositoryInsights({
                   <GitCommit className="w-4 h-4" />
                   Recent File Changes
                 </h4>
-                <ScrollArea className="h-[250px]">
+                <ScrollArea className="h-[300px]">
                   {isLoading.fileChanges ? (
                     <div className="space-y-3">
                       {Array.from({ length: 3 }).map((_, i) => (
