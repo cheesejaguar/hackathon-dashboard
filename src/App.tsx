@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useKV } from '@github/spark/hooks';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, RotateCcw, GitBranch, GitCompare, Monitor } from '@phosphor-icons/react';
+import { ArrowLeft, RotateCcw, GitBranch, GitCompare, Monitor, Activity } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 
 import { GitHubLogin } from '@/components/GitHubLogin';
@@ -23,11 +24,14 @@ import { ThemeTransition } from '@/components/ThemeTransition';
 import { SynthwaveVisualizer } from '@/components/SynthwaveVisualizer';
 import { SynthwaveAudio } from '@/components/SynthwaveAudio';
 import { ParticleBurst } from '@/components/ParticleBurst';
+import { WebhookPanel } from '@/components/WebhookPanel';
 
 import { useGitHubAuth } from '@/hooks/useGitHubAuth';
 import { useRepositoryComparison } from '@/hooks/useRepositoryComparison';
 import { useTheme } from '@/hooks/useTheme';
 import { useBurstMode } from '@/hooks/useBurstMode';
+import { useWebhookIntegration } from '@/hooks/useWebhookIntegration';
+import { useRealtimeUpdates } from '@/hooks/useRealtimeUpdates';
 import { githubAPI } from '@/lib/github';
 import { Repository, Commit, Branch, PullRequest, WorkflowRun, ContributorStats, LanguageStats, FileChange } from '@/lib/types';
 
@@ -45,6 +49,18 @@ function App() {
   const [contributors, setContributors] = useState<ContributorStats[]>([]);
   const [languages, setLanguages] = useState<LanguageStats>({});
   const [recentFileChanges, setRecentFileChanges] = useState<Array<{commit: Commit, files: FileChange[]}>>([]);
+  
+  // Webhook integration for real-time updates
+  const webhook = useWebhookIntegration(currentRepo?.owner, currentRepo?.repo);
+  
+  // Real-time updates management
+  const realtimeUpdates = useRealtimeUpdates({
+    owner: currentRepo?.owner,
+    repo: currentRepo?.repo,
+    isWebhookEnabled: webhook.config.enabled,
+    webhookEvents: webhook.events,
+    latestEvent: webhook.latestEvent
+  });
   
   // Burst mode hook for enhanced particle effects
   const burstMode = useBurstMode(commits, pullRequests, workflowRuns, theme === 'vibes');
@@ -231,16 +247,58 @@ function App() {
     toast.info('Logged out from GitHub');
   };
 
-  // Auto-refresh every 30 seconds when repository is loaded (only if authenticated for rate limiting)
+  // Auto-refresh based on real-time events
   useEffect(() => {
-    if (!currentRepo || !auth.isAuthenticated) return;
+    if (!currentRepo) return;
+
+    const refreshData = async () => {
+      if (realtimeUpdates.shouldRefreshCommits) {
+        await loadCommits(currentRepo.owner, currentRepo.repo);
+        realtimeUpdates.markDataRefreshed('commits');
+      }
+      
+      if (realtimeUpdates.shouldRefreshPRs) {
+        await loadPullRequests(currentRepo.owner, currentRepo.repo);
+        realtimeUpdates.markDataRefreshed('pullRequests');
+      }
+      
+      if (realtimeUpdates.shouldRefreshWorkflows) {
+        await loadWorkflowRuns(currentRepo.owner, currentRepo.repo);
+        realtimeUpdates.markDataRefreshed('workflows');
+      }
+      
+      if (realtimeUpdates.shouldRefreshBranches) {
+        await loadBranches(currentRepo.owner, currentRepo.repo);
+        realtimeUpdates.markDataRefreshed('branches');
+      }
+      
+      if (realtimeUpdates.shouldRefreshContributors) {
+        await loadContributors(currentRepo.owner, currentRepo.repo);
+        await loadFileChanges(currentRepo.owner, currentRepo.repo);
+        realtimeUpdates.markDataRefreshed('contributors');
+      }
+    };
+
+    refreshData();
+  }, [
+    currentRepo,
+    realtimeUpdates.shouldRefreshCommits,
+    realtimeUpdates.shouldRefreshPRs,
+    realtimeUpdates.shouldRefreshWorkflows,
+    realtimeUpdates.shouldRefreshBranches,
+    realtimeUpdates.shouldRefreshContributors
+  ]);
+
+  // Auto-refresh every 30 seconds when repository is loaded (only if authenticated and webhook disabled)
+  useEffect(() => {
+    if (!currentRepo || !auth.isAuthenticated || webhook.config.enabled) return;
 
     const interval = setInterval(() => {
       loadRepositoryData(currentRepo.owner, currentRepo.repo);
     }, 30000);
 
     return () => clearInterval(interval);
-  }, [currentRepo, auth.isAuthenticated]);
+  }, [currentRepo, auth.isAuthenticated, webhook.config.enabled]);
 
   // Load repository on mount if currentRepo exists
   useEffect(() => {
@@ -389,9 +447,15 @@ function App() {
             
             <div className="flex items-center gap-4">
               {activeView === 'monitor' && lastRefresh && (
-                <span className="text-sm text-muted-foreground">
-                  Last updated: {lastRefresh.toLocaleTimeString()}
-                </span>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span>Last updated: {lastRefresh.toLocaleTimeString()}</span>
+                  {webhook.config.enabled && webhook.isConnected && (
+                    <Badge variant="outline" className="text-xs">
+                      <Activity className="w-3 h-3 mr-1" />
+                      Live
+                    </Badge>
+                  )}
+                </div>
               )}
               {activeView === 'monitor' && (
                 <Button 
@@ -401,7 +465,7 @@ function App() {
                   className="flex items-center gap-2"
                 >
                   <RotateCcw className={`w-4 h-4 ${Object.values(loading).some(Boolean) ? 'animate-spin' : ''}`} />
-                  Refresh
+                  {webhook.config.enabled ? 'Force Refresh' : 'Refresh'}
                 </Button>
               )}
               <ThemeToggle />
@@ -457,8 +521,8 @@ function App() {
                     />
                   </div>
 
-                  {/* Right column - Insights */}
-                  <div className="xl:col-span-1">
+                  {/* Right column - Insights and Webhook */}
+                  <div className="xl:col-span-1 space-y-6">
                     <RepositoryInsights
                       contributors={contributors}
                       languages={languages}
@@ -469,6 +533,19 @@ function App() {
                         languages: loading.languages,
                         fileChanges: loading.fileChanges
                       }}
+                    />
+                    
+                    <WebhookPanel
+                      isConnected={webhook.isConnected}
+                      config={webhook.config}
+                      events={webhook.events}
+                      latestEvent={webhook.latestEvent}
+                      connectionError={webhook.connectionError}
+                      repositoryUrl={repository?.html_url}
+                      isAuthenticated={auth.isAuthenticated}
+                      onConfigUpdate={webhook.updateConfig}
+                      onClearEvents={webhook.clearEvents}
+                      onRetryConnection={webhook.retryConnection}
                     />
                   </div>
                 </div>
