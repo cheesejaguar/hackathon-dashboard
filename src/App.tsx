@@ -1,13 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useKV } from '@github/spark/hooks';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, RotateCcw, GitBranch, GitCompare, Monitor, Activity } from '@phosphor-icons/react';
+import { ArrowLeft, RotateCcw, GitBranch, GitCompare, Monitor, Activity, Keyboard } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 
-import { GitHubLogin } from '@/components/GitHubLogin';
 import { RepositorySelection } from '@/components/RepositorySelection';
 import { RepositoryInput } from '@/components/RepositoryInput';
 import { ApiSetup } from '@/components/ApiSetup';
@@ -18,13 +17,14 @@ import { PullRequestDashboard } from '@/components/PullRequestDashboard';
 import { ActionStatus } from '@/components/ActionStatus';
 import { RepositoryInsights } from '@/components/RepositoryInsights';
 import { RepositoryComparison } from '@/components/RepositoryComparison';
-import { AddRepositoryDialog } from '@/components/AddRepositoryDialog';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { ThemeTransition } from '@/components/ThemeTransition';
 import { SynthwaveVisualizer } from '@/components/SynthwaveVisualizer';
 import { SynthwaveAudio } from '@/components/SynthwaveAudio';
 import { ParticleBurst } from '@/components/ParticleBurst';
 import { WebhookPanel } from '@/components/WebhookPanel';
+import { RateLimitIndicator } from '@/components/RateLimitIndicator';
+import { KeyboardShortcutsHelp } from '@/components/KeyboardShortcutsHelp';
 
 import { useGitHubAuth } from '@/hooks/useGitHubAuth';
 import { useRepositoryComparison } from '@/hooks/useRepositoryComparison';
@@ -32,13 +32,14 @@ import { useTheme } from '@/hooks/useTheme';
 import { useBurstMode } from '@/hooks/useBurstMode';
 import { useWebhookIntegration } from '@/hooks/useWebhookIntegration';
 import { useRealtimeUpdates } from '@/hooks/useRealtimeUpdates';
+import { useKeyboardShortcuts, KeyboardShortcut } from '@/hooks/useKeyboardShortcuts';
 import { githubAPI } from '@/lib/github';
 import { Repository, Commit, Branch, PullRequest, WorkflowRun, ContributorStats, LanguageStats, FileChange } from '@/lib/types';
 
 function App() {
   const auth = useGitHubAuth();
   const comparison = useRepositoryComparison();
-  const { theme } = useTheme(); // Get theme from hook
+  const { theme, setTheme } = useTheme();
   const [currentRepo, setCurrentRepo] = useKV<{owner: string, repo: string} | null>('current-repo', null);
   const [activeView, setActiveView] = useKV<'monitor' | 'compare'>('active-view', 'monitor');
   const [repository, setRepository] = useState<Repository | null>(null);
@@ -49,10 +50,10 @@ function App() {
   const [contributors, setContributors] = useState<ContributorStats[]>([]);
   const [languages, setLanguages] = useState<LanguageStats>({});
   const [recentFileChanges, setRecentFileChanges] = useState<Array<{commit: Commit, files: FileChange[]}>>([]);
-  
+
   // Webhook integration for real-time updates
   const webhook = useWebhookIntegration(currentRepo?.owner, currentRepo?.repo);
-  
+
   // Real-time updates management
   const realtimeUpdates = useRealtimeUpdates({
     owner: currentRepo?.owner,
@@ -61,10 +62,10 @@ function App() {
     webhookEvents: webhook.events,
     latestEvent: webhook.latestEvent
   });
-  
+
   // Burst mode hook for enhanced particle effects
   const burstMode = useBurstMode(commits, pullRequests, workflowRuns, theme === 'vibes');
-  
+
   const [loading, setLoading] = useState({
     repository: false,
     commits: false,
@@ -75,7 +76,7 @@ function App() {
     languages: false,
     fileChanges: false,
   });
-  
+
   const [error, setError] = useState<string | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
 
@@ -84,33 +85,96 @@ function App() {
     if (auth.token) {
       githubAPI.setToken(auth.token);
     } else {
-      // Clear token but still allow API usage (with rate limits)
       githubAPI.setToken('');
     }
   }, [auth.token]);
 
-  const handleRepositorySelect = async (owner: string, repo: string) => {
-    setError(null);
-    setLoading(prev => ({ ...prev, repository: true }));
-    
+  // Memoized data loading functions
+  const loadCommits = useCallback(async (owner: string, repo: string) => {
+    setLoading(prev => ({ ...prev, commits: true }));
     try {
-      const repoData = await githubAPI.getRepository(owner, repo);
-      setRepository(repoData);
-      setCurrentRepo({ owner, repo });
-      
-      await loadRepositoryData(owner, repo);
-      
-      toast.success(`Connected to ${owner}/${repo}`);
+      const commitsData = await githubAPI.getCommits(owner, repo);
+      setCommits(commitsData);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to load repository';
-      setError(message);
-      toast.error(message);
+      console.error('Failed to load commits:', err);
     } finally {
-      setLoading(prev => ({ ...prev, repository: false }));
+      setLoading(prev => ({ ...prev, commits: false }));
     }
-  };
+  }, []);
 
-  const loadRepositoryData = async (owner: string, repo: string) => {
+  const loadBranches = useCallback(async (owner: string, repo: string) => {
+    setLoading(prev => ({ ...prev, branches: true }));
+    try {
+      const branchesData = await githubAPI.getBranches(owner, repo);
+      setBranches(branchesData);
+    } catch (err) {
+      console.error('Failed to load branches:', err);
+    } finally {
+      setLoading(prev => ({ ...prev, branches: false }));
+    }
+  }, []);
+
+  const loadPullRequests = useCallback(async (owner: string, repo: string) => {
+    setLoading(prev => ({ ...prev, pullRequests: true }));
+    try {
+      const prsData = await githubAPI.getPullRequests(owner, repo);
+      setPullRequests(prsData);
+    } catch (err) {
+      console.error('Failed to load pull requests:', err);
+    } finally {
+      setLoading(prev => ({ ...prev, pullRequests: false }));
+    }
+  }, []);
+
+  const loadWorkflowRuns = useCallback(async (owner: string, repo: string) => {
+    setLoading(prev => ({ ...prev, workflowRuns: true }));
+    try {
+      const workflowData = await githubAPI.getWorkflowRuns(owner, repo);
+      setWorkflowRuns(workflowData);
+    } catch (err) {
+      console.error('Failed to load workflow runs:', err);
+    } finally {
+      setLoading(prev => ({ ...prev, workflowRuns: false }));
+    }
+  }, []);
+
+  const loadContributors = useCallback(async (owner: string, repo: string) => {
+    setLoading(prev => ({ ...prev, contributors: true }));
+    try {
+      const contributorsData = await githubAPI.getContributors(owner, repo);
+      setContributors(contributorsData);
+    } catch (err) {
+      console.error('Failed to load contributors:', err);
+    } finally {
+      setLoading(prev => ({ ...prev, contributors: false }));
+    }
+  }, []);
+
+  const loadLanguages = useCallback(async (owner: string, repo: string) => {
+    setLoading(prev => ({ ...prev, languages: true }));
+    try {
+      const languagesData = await githubAPI.getLanguages(owner, repo);
+      setLanguages(languagesData);
+    } catch (err) {
+      console.error('Failed to load languages:', err);
+    } finally {
+      setLoading(prev => ({ ...prev, languages: false }));
+    }
+  }, []);
+
+  const loadFileChanges = useCallback(async (owner: string, repo: string) => {
+    setLoading(prev => ({ ...prev, fileChanges: true }));
+    try {
+      const fileChangesData = await githubAPI.getRecentCommitsWithFiles(owner, repo);
+      setRecentFileChanges(fileChangesData);
+    } catch (err) {
+      console.error('Failed to load file changes:', err);
+    } finally {
+      setLoading(prev => ({ ...prev, fileChanges: false }));
+    }
+  }, []);
+
+  const loadRepositoryData = useCallback(async (owner: string, repo: string) => {
     const loadingPromises = [
       loadCommits(owner, repo),
       loadBranches(owner, repo),
@@ -123,101 +187,38 @@ function App() {
 
     await Promise.allSettled(loadingPromises);
     setLastRefresh(new Date());
-  };
+  }, [loadCommits, loadBranches, loadPullRequests, loadWorkflowRuns, loadContributors, loadLanguages, loadFileChanges]);
 
-  const loadCommits = async (owner: string, repo: string) => {
-    setLoading(prev => ({ ...prev, commits: true }));
+  const handleRepositorySelect = useCallback(async (owner: string, repo: string) => {
+    setError(null);
+    setLoading(prev => ({ ...prev, repository: true }));
+
     try {
-      const commitsData = await githubAPI.getCommits(owner, repo);
-      setCommits(commitsData);
-    } catch (err) {
-      console.error('Failed to load commits:', err);
-    } finally {
-      setLoading(prev => ({ ...prev, commits: false }));
-    }
-  };
+      const repoData = await githubAPI.getRepository(owner, repo);
+      setRepository(repoData);
+      setCurrentRepo({ owner, repo });
 
-  const loadBranches = async (owner: string, repo: string) => {
-    setLoading(prev => ({ ...prev, branches: true }));
-    try {
-      const branchesData = await githubAPI.getBranches(owner, repo);
-      setBranches(branchesData);
-    } catch (err) {
-      console.error('Failed to load branches:', err);
-    } finally {
-      setLoading(prev => ({ ...prev, branches: false }));
-    }
-  };
+      await loadRepositoryData(owner, repo);
 
-  const loadPullRequests = async (owner: string, repo: string) => {
-    setLoading(prev => ({ ...prev, pullRequests: true }));
-    try {
-      const prsData = await githubAPI.getPullRequests(owner, repo);
-      setPullRequests(prsData);
+      toast.success(`Connected to ${owner}/${repo}`);
     } catch (err) {
-      console.error('Failed to load pull requests:', err);
+      const message = err instanceof Error ? err.message : 'Failed to load repository';
+      setError(message);
+      toast.error(message);
     } finally {
-      setLoading(prev => ({ ...prev, pullRequests: false }));
+      setLoading(prev => ({ ...prev, repository: false }));
     }
-  };
+  }, [loadRepositoryData, setCurrentRepo]);
 
-  const loadWorkflowRuns = async (owner: string, repo: string) => {
-    setLoading(prev => ({ ...prev, workflowRuns: true }));
-    try {
-      const workflowData = await githubAPI.getWorkflowRuns(owner, repo);
-      setWorkflowRuns(workflowData);
-    } catch (err) {
-      console.error('Failed to load workflow runs:', err);
-    } finally {
-      setLoading(prev => ({ ...prev, workflowRuns: false }));
-    }
-  };
-
-  const loadContributors = async (owner: string, repo: string) => {
-    setLoading(prev => ({ ...prev, contributors: true }));
-    try {
-      const contributorsData = await githubAPI.getContributors(owner, repo);
-      setContributors(contributorsData);
-    } catch (err) {
-      console.error('Failed to load contributors:', err);
-    } finally {
-      setLoading(prev => ({ ...prev, contributors: false }));
-    }
-  };
-
-  const loadLanguages = async (owner: string, repo: string) => {
-    setLoading(prev => ({ ...prev, languages: true }));
-    try {
-      const languagesData = await githubAPI.getLanguages(owner, repo);
-      setLanguages(languagesData);
-    } catch (err) {
-      console.error('Failed to load languages:', err);
-    } finally {
-      setLoading(prev => ({ ...prev, languages: false }));
-    }
-  };
-
-  const loadFileChanges = async (owner: string, repo: string) => {
-    setLoading(prev => ({ ...prev, fileChanges: true }));
-    try {
-      const fileChangesData = await githubAPI.getRecentCommitsWithFiles(owner, repo);
-      setRecentFileChanges(fileChangesData);
-    } catch (err) {
-      console.error('Failed to load file changes:', err);
-    } finally {
-      setLoading(prev => ({ ...prev, fileChanges: false }));
-    }
-  };
-
-  const handleRefresh = async () => {
+  const handleRefresh = useCallback(async () => {
     if (!currentRepo) return;
-    
+
     toast.info('Refreshing repository data...');
     await loadRepositoryData(currentRepo.owner, currentRepo.repo);
     toast.success('Data refreshed');
-  };
+  }, [currentRepo, loadRepositoryData]);
 
-  const handleBackToSelection = () => {
+  const handleBackToSelection = useCallback(() => {
     setCurrentRepo(null);
     setRepository(null);
     setCommits([]);
@@ -229,9 +230,9 @@ function App() {
     setRecentFileChanges([]);
     setError(null);
     setLastRefresh(null);
-  };
+  }, [setCurrentRepo]);
 
-  const handleLogin = async (token: string) => {
+  const handleLogin = useCallback(async (token: string) => {
     try {
       await auth.loginWithToken(token);
       toast.success('Successfully connected to GitHub!');
@@ -239,13 +240,68 @@ function App() {
       const message = err instanceof Error ? err.message : 'Login failed';
       toast.error(message);
     }
-  };
+  }, [auth]);
 
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     auth.logout();
     handleBackToSelection();
     toast.info('Logged out from GitHub');
-  };
+  }, [auth, handleBackToSelection]);
+
+  // Keyboard shortcuts configuration
+  const shortcuts: KeyboardShortcut[] = useMemo(() => [
+    {
+      key: 'r',
+      description: 'Refresh data',
+      action: handleRefresh,
+      category: 'Navigation',
+    },
+    {
+      key: 'b',
+      description: 'Back to repository selection',
+      action: handleBackToSelection,
+      category: 'Navigation',
+    },
+    {
+      key: '1',
+      description: 'Switch to Monitor view',
+      action: () => setActiveView('monitor'),
+      category: 'Views',
+    },
+    {
+      key: '2',
+      description: 'Switch to Compare view',
+      action: () => setActiveView('compare'),
+      category: 'Views',
+    },
+    {
+      key: 't',
+      description: 'Cycle through themes',
+      action: () => {
+        const themes = ['light', 'dark', 'vibes'] as const;
+        const currentIndex = themes.indexOf(theme);
+        const nextTheme = themes[(currentIndex + 1) % themes.length];
+        setTheme(nextTheme);
+        toast.info(`Theme changed to ${nextTheme}`);
+      },
+      category: 'Preferences',
+    },
+    {
+      key: 'g',
+      description: 'Open repository on GitHub',
+      action: () => {
+        if (repository?.html_url) {
+          window.open(repository.html_url, '_blank');
+        }
+      },
+      category: 'Actions',
+    },
+  ], [handleRefresh, handleBackToSelection, setActiveView, theme, setTheme, repository]);
+
+  const { showHelp, toggleHelp, closeHelp } = useKeyboardShortcuts({
+    shortcuts,
+    enabled: !!repository || activeView === 'compare',
+  });
 
   // Auto-refresh based on real-time events
   useEffect(() => {
@@ -256,22 +312,22 @@ function App() {
         await loadCommits(currentRepo.owner, currentRepo.repo);
         realtimeUpdates.markDataRefreshed('commits');
       }
-      
+
       if (realtimeUpdates.shouldRefreshPRs) {
         await loadPullRequests(currentRepo.owner, currentRepo.repo);
         realtimeUpdates.markDataRefreshed('pullRequests');
       }
-      
+
       if (realtimeUpdates.shouldRefreshWorkflows) {
         await loadWorkflowRuns(currentRepo.owner, currentRepo.repo);
         realtimeUpdates.markDataRefreshed('workflows');
       }
-      
+
       if (realtimeUpdates.shouldRefreshBranches) {
         await loadBranches(currentRepo.owner, currentRepo.repo);
         realtimeUpdates.markDataRefreshed('branches');
       }
-      
+
       if (realtimeUpdates.shouldRefreshContributors) {
         await loadContributors(currentRepo.owner, currentRepo.repo);
         await loadFileChanges(currentRepo.owner, currentRepo.repo);
@@ -286,7 +342,14 @@ function App() {
     realtimeUpdates.shouldRefreshPRs,
     realtimeUpdates.shouldRefreshWorkflows,
     realtimeUpdates.shouldRefreshBranches,
-    realtimeUpdates.shouldRefreshContributors
+    realtimeUpdates.shouldRefreshContributors,
+    loadCommits,
+    loadPullRequests,
+    loadWorkflowRuns,
+    loadBranches,
+    loadContributors,
+    loadFileChanges,
+    realtimeUpdates
   ]);
 
   // Auto-refresh every 30 seconds when repository is loaded (only if authenticated and webhook disabled)
@@ -298,14 +361,14 @@ function App() {
     }, 30000);
 
     return () => clearInterval(interval);
-  }, [currentRepo, auth.isAuthenticated, webhook.config.enabled]);
+  }, [currentRepo, auth.isAuthenticated, webhook.config.enabled, loadRepositoryData]);
 
   // Load repository on mount if currentRepo exists
   useEffect(() => {
     if (currentRepo && !repository) {
       handleRepositorySelect(currentRepo.owner, currentRepo.repo);
     }
-  }, [currentRepo, repository]);
+  }, [currentRepo, repository, handleRepositorySelect]);
 
   // Show repository selection/input if no repository is selected and not in comparison view
   if ((!currentRepo || !repository) && activeView !== 'compare') {
@@ -313,7 +376,7 @@ function App() {
       <div className="min-h-screen bg-background">
         {/* Theme Transition Effects */}
         <ThemeTransition />
-        
+
         {/* Synthwave Visualizer - background only, not active without repository */}
         <SynthwaveVisualizer
           commits={[]}
@@ -321,7 +384,7 @@ function App() {
           workflowRuns={[]}
           isActive={false}
         />
-        
+
         {/* Particle Burst Effects - not active without repository */}
         <ParticleBurst
           commits={[]}
@@ -329,25 +392,26 @@ function App() {
           workflowRuns={[]}
           isActive={false}
         />
-        
+
         {/* Top bar with API setup */}
-        <div className="border-b bg-card/50 backdrop-blur">
+        <header className="border-b bg-card/50 backdrop-blur" role="banner">
           <div className="container mx-auto px-6 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <GitBranch className="w-6 h-6 text-primary" />
+                <GitBranch className="w-6 h-6 text-primary" aria-hidden="true" />
                 <h1 className="text-xl font-semibold">GitHub Repository Dashboard</h1>
               </div>
-              <div className="flex items-center gap-4">
+              <nav className="flex items-center gap-4" role="navigation" aria-label="Main navigation">
+                <RateLimitIndicator />
                 <ThemeToggle />
                 <Tabs value={activeView} onValueChange={(value) => setActiveView(value as 'monitor' | 'compare')}>
                   <TabsList>
                     <TabsTrigger value="monitor" className="flex items-center gap-2">
-                      <Monitor className="w-4 h-4" />
+                      <Monitor className="w-4 h-4" aria-hidden="true" />
                       Monitor
                     </TabsTrigger>
                     <TabsTrigger value="compare" className="flex items-center gap-2">
-                      <GitCompare className="w-4 h-4" />
+                      <GitCompare className="w-4 h-4" aria-hidden="true" />
                       Compare
                     </TabsTrigger>
                   </TabsList>
@@ -360,12 +424,12 @@ function App() {
                   isLoading={auth.isLoading}
                   error={auth.error}
                 />
-              </div>
+              </nav>
             </div>
           </div>
-        </div>
+        </header>
 
-        <div className="flex items-center justify-center p-6 min-h-[calc(100vh-80px)] relative z-10">{/* Ensure content is above visualizer */}
+        <main className="flex items-center justify-center p-6 min-h-[calc(100vh-80px)] relative z-10" role="main">
           {activeView === 'compare' ? (
             <div className="w-full max-w-6xl">
               <RepositoryComparison
@@ -375,7 +439,7 @@ function App() {
               />
             </div>
           ) : auth.isAuthenticated ? (
-            <RepositorySelection 
+            <RepositorySelection
               user={auth.user!}
               token={auth.token!}
               onRepositorySelect={handleRepositorySelect}
@@ -388,7 +452,14 @@ function App() {
               error={error}
             />
           )}
-        </div>
+        </main>
+
+        {/* Keyboard shortcuts help dialog */}
+        <KeyboardShortcutsHelp
+          open={showHelp}
+          onOpenChange={closeHelp}
+          shortcuts={shortcuts}
+        />
       </div>
     );
   }
@@ -397,7 +468,7 @@ function App() {
     <div className={`min-h-screen bg-background ${theme === 'vibes' ? burstMode.getBurstClassName() : ''}`}>
       {/* Theme Transition Effects */}
       <ThemeTransition />
-      
+
       {/* Synthwave Visualizer - only active in vibes mode */}
       <SynthwaveVisualizer
         commits={commits}
@@ -405,7 +476,7 @@ function App() {
         workflowRuns={workflowRuns}
         isActive={theme === 'vibes' && !!repository}
       />
-      
+
       {/* Particle Burst Effects - intense activity bursts in vibes mode */}
       <ParticleBurst
         commits={commits}
@@ -413,61 +484,73 @@ function App() {
         workflowRuns={workflowRuns}
         isActive={theme === 'vibes' && !!repository}
       />
-      
+
       {/* Synthwave Audio - only plays in vibes mode when repository is active */}
       <SynthwaveAudio isPlaying={theme === 'vibes' && !!repository} />
 
-      <div className="container mx-auto p-6 space-y-6 relative z-10">{/* Ensure content is above visualizer */}
+      <main className="container mx-auto p-6 space-y-6 relative z-10" role="main">
         <Tabs value={activeView} onValueChange={(value) => setActiveView(value as 'monitor' | 'compare')}>
           {/* Header with navigation and controls */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+          <header className="flex items-center justify-between" role="banner">
+            <nav className="flex items-center gap-4" role="navigation" aria-label="Dashboard navigation">
               {activeView === 'monitor' && (
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={handleBackToSelection}
                   className="flex items-center gap-2"
+                  aria-label="Change repository"
                 >
-                  <ArrowLeft className="w-4 h-4" />
+                  <ArrowLeft className="w-4 h-4" aria-hidden="true" />
                   Change Repository
                 </Button>
               )}
-              
+
               <TabsList>
                 <TabsTrigger value="monitor" className="flex items-center gap-2">
-                  <Monitor className="w-4 h-4" />
+                  <Monitor className="w-4 h-4" aria-hidden="true" />
                   Monitor
                 </TabsTrigger>
                 <TabsTrigger value="compare" className="flex items-center gap-2">
-                  <GitCompare className="w-4 h-4" />
+                  <GitCompare className="w-4 h-4" aria-hidden="true" />
                   Compare
                 </TabsTrigger>
               </TabsList>
-            </div>
-            
+            </nav>
+
             <div className="flex items-center gap-4">
               {activeView === 'monitor' && lastRefresh && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground" aria-live="polite">
                   <span>Last updated: {lastRefresh.toLocaleTimeString()}</span>
                   {webhook.config.enabled && webhook.isConnected && (
                     <Badge variant="outline" className="text-xs">
-                      <Activity className="w-3 h-3 mr-1" />
+                      <Activity className="w-3 h-3 mr-1" aria-hidden="true" />
                       Live
                     </Badge>
                   )}
                 </div>
               )}
               {activeView === 'monitor' && (
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={handleRefresh}
                   disabled={Object.values(loading).some(Boolean)}
                   className="flex items-center gap-2"
+                  aria-label={webhook.config.enabled ? 'Force refresh data' : 'Refresh data'}
                 >
-                  <RotateCcw className={`w-4 h-4 ${Object.values(loading).some(Boolean) ? 'animate-spin' : ''}`} />
+                  <RotateCcw className={`w-4 h-4 ${Object.values(loading).some(Boolean) ? 'animate-spin' : ''}`} aria-hidden="true" />
                   {webhook.config.enabled ? 'Force Refresh' : 'Refresh'}
                 </Button>
               )}
+              <RateLimitIndicator />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleHelp}
+                className="h-9 w-9"
+                aria-label="Keyboard shortcuts"
+              >
+                <Keyboard className="w-4 h-4" aria-hidden="true" />
+              </Button>
               <ThemeToggle />
               <ApiSetup
                 isAuthenticated={auth.isAuthenticated}
@@ -478,7 +561,7 @@ function App() {
                 error={auth.error}
               />
             </div>
-          </div>
+          </header>
 
           {/* Content based on active view */}
           <TabsContent value="monitor" className="mt-6">
@@ -493,31 +576,36 @@ function App() {
                 <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mt-6">
                   {/* Left column */}
                   <div className="space-y-6">
-                    <CommitFlow commits={commits} isLoading={loading.commits} />
+                    <CommitFlow
+                      commits={commits}
+                      isLoading={loading.commits}
+                      owner={currentRepo?.owner}
+                      repo={currentRepo?.repo}
+                    />
                     <div className="xl:hidden">
-                      <PullRequestDashboard 
-                        pullRequests={pullRequests} 
-                        isLoading={loading.pullRequests} 
+                      <PullRequestDashboard
+                        pullRequests={pullRequests}
+                        isLoading={loading.pullRequests}
                       />
                     </div>
-                    <BranchMonitor 
-                      branches={branches} 
+                    <BranchMonitor
+                      branches={branches}
                       defaultBranch={repository.default_branch}
-                      isLoading={loading.branches} 
+                      isLoading={loading.branches}
                     />
                   </div>
 
                   {/* Middle column */}
                   <div className="space-y-6">
                     <div className="hidden xl:block">
-                      <PullRequestDashboard 
-                        pullRequests={pullRequests} 
-                        isLoading={loading.pullRequests} 
+                      <PullRequestDashboard
+                        pullRequests={pullRequests}
+                        isLoading={loading.pullRequests}
                       />
                     </div>
-                    <ActionStatus 
-                      workflowRuns={workflowRuns} 
-                      isLoading={loading.workflowRuns} 
+                    <ActionStatus
+                      workflowRuns={workflowRuns}
+                      isLoading={loading.workflowRuns}
                     />
                   </div>
 
@@ -534,7 +622,7 @@ function App() {
                         fileChanges: loading.fileChanges
                       }}
                     />
-                    
+
                     <WebhookPanel
                       isConnected={webhook.isConnected}
                       config={webhook.config}
@@ -561,7 +649,14 @@ function App() {
             />
           </TabsContent>
         </Tabs>
-      </div>
+      </main>
+
+      {/* Keyboard shortcuts help dialog */}
+      <KeyboardShortcutsHelp
+        open={showHelp}
+        onOpenChange={closeHelp}
+        shortcuts={shortcuts}
+      />
     </div>
   );
 }
