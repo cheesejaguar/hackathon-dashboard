@@ -71,9 +71,8 @@ describe('formatTimeAgo', () => {
 
   it('should return formatted date for older times', () => {
     const date = new Date('2023-10-15T12:00:00Z').toISOString();
-    const result = formatTimeAgo(date);
-    // The exact format depends on locale, just verify it's not in "ago" format
-    expect(result).not.toContain('ago');
+    // Falls back to the locale date string once older than 30 days
+    expect(formatTimeAgo(date)).toBe(new Date(date).toLocaleDateString());
   });
 });
 

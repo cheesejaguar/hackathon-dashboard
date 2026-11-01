@@ -3,63 +3,86 @@ import { renderHook, act } from '@testing-library/react';
 import { useKeyboardShortcuts, formatShortcutKey, KeyboardShortcut } from './useKeyboardShortcuts';
 
 describe('useKeyboardShortcuts', () => {
-  let mockAction: ReturnType<typeof vi.fn>;
+  let refresh: ReturnType<typeof vi.fn>;
+  let save: ReturnType<typeof vi.fn>;
+  let command: ReturnType<typeof vi.fn>;
   let shortcuts: KeyboardShortcut[];
 
+  const press = (init: KeyboardEventInit, target: EventTarget = window) => {
+    act(() => {
+      target.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, ...init }));
+    });
+  };
+
   beforeEach(() => {
-    mockAction = vi.fn();
+    refresh = vi.fn();
+    save = vi.fn();
+    command = vi.fn();
     shortcuts = [
-      { key: 'r', description: 'Refresh', action: mockAction, category: 'General' },
-      { key: 's', modifiers: ['ctrl'], description: 'Save', action: mockAction, category: 'General' },
-      { key: 'k', modifiers: ['ctrl', 'shift'], description: 'Command', action: mockAction, category: 'Navigation' },
+      { key: 'r', description: 'Refresh', action: refresh, category: 'General' },
+      { key: 's', modifiers: ['ctrl'], description: 'Save', action: save, category: 'General' },
+      { key: 'k', modifiers: ['ctrl', 'shift'], description: 'Command', action: command, category: 'Navigation' },
     ];
   });
 
   afterEach(() => {
-    vi.clearAllMocks();
+    document.body.innerHTML = '';
   });
 
   it('should trigger action on matching keypress', () => {
     renderHook(() => useKeyboardShortcuts({ shortcuts }));
 
-    const event = new KeyboardEvent('keydown', { key: 'r' });
-    window.dispatchEvent(event);
+    press({ key: 'r' });
 
-    expect(mockAction).toHaveBeenCalledTimes(1);
+    expect(refresh).toHaveBeenCalledTimes(1);
+    expect(save).not.toHaveBeenCalled();
+    expect(command).not.toHaveBeenCalled();
   });
 
   it('should trigger action with modifier keys', () => {
     renderHook(() => useKeyboardShortcuts({ shortcuts }));
 
-    const event = new KeyboardEvent('keydown', {
-      key: 's',
-      ctrlKey: true,
-    });
-    window.dispatchEvent(event);
+    press({ key: 's', ctrlKey: true });
 
-    expect(mockAction).toHaveBeenCalledTimes(1);
+    expect(save).toHaveBeenCalledTimes(1);
+    expect(refresh).not.toHaveBeenCalled();
+  });
+
+  it('should not trigger a modifier shortcut when the modifier is missing', () => {
+    renderHook(() => useKeyboardShortcuts({ shortcuts }));
+
+    press({ key: 's' });
+    press({ key: 'k', ctrlKey: true });
+
+    expect(save).not.toHaveBeenCalled();
+    expect(command).not.toHaveBeenCalled();
   });
 
   it('should trigger action with multiple modifier keys', () => {
     renderHook(() => useKeyboardShortcuts({ shortcuts }));
 
-    const event = new KeyboardEvent('keydown', {
-      key: 'k',
-      ctrlKey: true,
-      shiftKey: true,
-    });
-    window.dispatchEvent(event);
+    press({ key: 'k', ctrlKey: true, shiftKey: true });
 
-    expect(mockAction).toHaveBeenCalledTimes(1);
+    expect(command).toHaveBeenCalledTimes(1);
+    expect(save).not.toHaveBeenCalled();
   });
 
   it('should not trigger action when disabled', () => {
     renderHook(() => useKeyboardShortcuts({ shortcuts, enabled: false }));
 
-    const event = new KeyboardEvent('keydown', { key: 'r' });
-    window.dispatchEvent(event);
+    press({ key: 'r' });
 
-    expect(mockAction).not.toHaveBeenCalled();
+    expect(refresh).not.toHaveBeenCalled();
+  });
+
+  it('should ignore shortcuts while typing in an input', () => {
+    renderHook(() => useKeyboardShortcuts({ shortcuts }));
+    const input = document.createElement('input');
+    document.body.appendChild(input);
+
+    press({ key: 'r' }, input);
+
+    expect(refresh).not.toHaveBeenCalled();
   });
 
   it('should toggle help with ? key', () => {
@@ -67,10 +90,11 @@ describe('useKeyboardShortcuts', () => {
 
     expect(result.current.showHelp).toBe(false);
 
-    const event = new KeyboardEvent('keydown', { key: '?', shiftKey: true });
-    window.dispatchEvent(event);
-
+    press({ key: '?', shiftKey: true });
     expect(result.current.showHelp).toBe(true);
+
+    press({ key: '?', shiftKey: true });
+    expect(result.current.showHelp).toBe(false);
   });
 
   it('should provide toggleHelp function', () => {
@@ -105,15 +129,13 @@ describe('useKeyboardShortcuts', () => {
     expect(result.current.shortcuts).toBe(shortcuts);
   });
 
-  it('should cleanup event listeners on unmount', () => {
-    const removeEventListenerSpy = vi.spyOn(window, 'removeEventListener');
-
+  it('should stop handling keypresses after unmount', () => {
     const { unmount } = renderHook(() => useKeyboardShortcuts({ shortcuts }));
     unmount();
 
-    expect(removeEventListenerSpy).toHaveBeenCalledWith('keydown', expect.any(Function));
+    press({ key: 'r' });
 
-    removeEventListenerSpy.mockRestore();
+    expect(refresh).not.toHaveBeenCalled();
   });
 });
 
@@ -161,7 +183,7 @@ describe('formatShortcutKey', () => {
       action: () => {},
     };
 
-    expect(formatShortcutKey(shortcut)).toContain('⇧');
+    expect(formatShortcutKey(shortcut)).toBe('⇧ + P');
   });
 
   it('should format Escape key', () => {
